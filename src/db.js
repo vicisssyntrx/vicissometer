@@ -23,15 +23,15 @@ export const DEFAULT_HABITS = [
 
 export const DEFAULT_SETTINGS = {
   fontScale:     1.0,
-  theme:         'auto',       // light | dark | auto
+  theme:         'dark',       // light | dark | auto
   bgOpacity:     100,
-  cardOpacity:   82,
-  cardBg:        '#FFFFFF',
-  primaryText:   '#1D1D1F',
-  secondaryText: '#6E6E73',
+  cardOpacity:   88,
+  cardBg:        '#1C1C1E',
+  primaryText:   '#F5F5F7',
+  secondaryText: '#98989D',
   accentColor:   '#8B5CF6',
   bgType:        'gradient',
-  bgValue:       '145deg, #F2F2F7 0%, #FFFFFF 50%, #E8E8ED 100%',
+  bgValue:       '145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%',
   startDate:     '2024-12-24',
   targetDate:    '2025-12-25',
 }
