@@ -12,7 +12,8 @@ export function initHeader(container) {
           <button class="hamburger-btn" id="hamburger-btn" aria-label="Open settings">
             <span></span><span></span><span></span>
           </button>
-          <span class="header-brand">Vicissometer</span>
+          <img src="/logo.png" alt="Logo" class="app-logo" />
+          <span class="header-brand hide-on-mobile">Vicissometer</span>
         </div>
         <div class="header-right">
           <div class="header-badge badge-coins">
@@ -23,22 +24,12 @@ export function initHeader(container) {
             <span class="badge-icon">🔥</span>
             <span id="header-streak">${streak}</span>
           </div>
-          <button class="btn-signout" id="signout-btn" aria-label="Sign out">Sign Out</button>
         </div>
       </header>
     `
 
     document.getElementById('hamburger-btn').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('toggle-settings'))
-    })
-
-    document.getElementById('signout-btn').addEventListener('click', async () => {
-      try {
-        await signOut()
-        // onAuthStateChange in main.js will redirect to login
-      } catch (err) {
-        showToast('Sign out failed', 'error')
-      }
     })
   }
 

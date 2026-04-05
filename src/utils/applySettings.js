@@ -60,11 +60,17 @@ export function applySettings(s) {
     const defaultLight = '145deg, #F2F2F7 0%, #FFFFFF 50%, #E8E8ED 100%'
     const defaultDark = '145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%'
     const isDefault = s.bgValue === defaultLight || s.bgValue === defaultDark
-    if (!isDefault) {
-      root.style.setProperty('--bg',
-        s.bgType === 'gradient' ? `linear-gradient(${s.bgValue})` : s.bgValue
-      )
+    if (!isDefault || s.bgType === 'image') {
+      let bgStyle = s.bgValue;
+      if (s.bgType === 'gradient') bgStyle = `linear-gradient(${s.bgValue})`
+      else if (s.bgType === 'image') bgStyle = `url('${s.bgValue}') center/cover fixed no-repeat`
+      root.style.setProperty('--bg', bgStyle)
     }
+  }
+
+  // Background Blur
+  if (s.bgBlur !== undefined) {
+    root.style.setProperty('--bg-blur', s.bgBlur + 'px')
   }
 }
 

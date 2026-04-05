@@ -1,4 +1,5 @@
 import { store } from '../state.js'
+import { signOut } from '../supabase.js'
 import { updateSettings, updateProfile, DEFAULT_SETTINGS } from '../db.js'
 import { applySettings } from '../utils/applySettings.js'
 import { showToast } from '../utils/toast.js'
@@ -115,11 +116,20 @@ export function initSettings() {
             <select class="glass-select" id="bg-type-select">
               <option value="solid" ${s.bgType === 'solid' ? 'selected' : ''}>Solid Color</option>
               <option value="gradient" ${s.bgType === 'gradient' ? 'selected' : ''}>Gradient</option>
+              <option value="image" ${s.bgType === 'image' ? 'selected' : ''}>Image URL</option>
             </select>
           </div>
           <div class="settings-row">
             <input class="glass-input" id="bg-value" value="${s.bgValue}"
-              placeholder="${s.bgType === 'gradient' ? '135deg, #2A1009 0%, #5C2D0C 100%' : '#2A1009'}" />
+              placeholder="${s.bgType === 'image' ? 'https://example.com/bg.jpg' : '#2A1009'}" />
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              Background Blur
+              <span class="settings-label-note" id="bg-blur-note">${s.bgBlur || 0}px</span>
+            </div>
+            <input type="range" class="glass-slider" id="bg-blur" min="0" max="50" value="${s.bgBlur || 0}"
+              style="--slider-pct:${(s.bgBlur || 0) * 2}%" />
           </div>
         </div>
 
@@ -144,6 +154,7 @@ export function initSettings() {
       <div class="settings-actions">
         <button class="btn btn-primary" id="settings-save" style="flex:2">💾 Save</button>
         <button class="btn btn-warning" id="settings-reset" style="flex:1">↺</button>
+        <button class="btn btn-danger" id="settings-signout" style="flex:1">Sign Out</button>
       </div>
     `
 
@@ -174,6 +185,24 @@ export function initSettings() {
       e.target.style.setProperty('--slider-pct', v + '%')
       document.getElementById('card-opacity-note').textContent = v + '%'
       document.documentElement.style.setProperty('--card-opacity', (v / 100).toFixed(2))
+    })
+    document.getElementById('bg-blur')?.addEventListener('input', e => {
+      const v = e.target.value
+      e.target.style.setProperty('--slider-pct', (v * 2) + '%')
+      document.getElementById('bg-blur-note').textContent = v + 'px'
+      // Live preview
+      document.documentElement.style.setProperty('--bg-blur', v + 'px')
+    })
+
+    // Sign Out
+    document.getElementById('settings-signout')?.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to sign out?')) return
+      try {
+        await signOut()
+        close()
+      } catch (err) {
+        showToast('Sign out failed', 'error')
+      }
     })
 
     // Save
@@ -230,6 +259,7 @@ export function initSettings() {
       accentColor: document.getElementById('accent-color')?.value || cur.accentColor,
       bgType: document.getElementById('bg-type-select')?.value || cur.bgType,
       bgValue: document.getElementById('bg-value')?.value || cur.bgValue,
+      bgBlur: parseInt(document.getElementById('bg-blur')?.value || cur.bgBlur || 0),
       startDate: document.getElementById('start-date')?.value || cur.startDate,
       targetDate: document.getElementById('target-date')?.value || cur.targetDate,
       customQuotes: cur.customQuotes,

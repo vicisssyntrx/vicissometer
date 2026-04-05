@@ -141,11 +141,12 @@ ul, ol { list-style: none; }
 
 .app-bg {
   position: fixed;
-  inset: 0;
+  inset: -100px;
   background: var(--bg);
   background-attachment: fixed;
   z-index: -2;
   transition: background 0.6s var(--ease-in-out);
+  filter: blur(var(--bg-blur, 0px));
 }
 
 .app-bg-noise {
@@ -528,6 +529,7 @@ ul, ol { list-style: none; }
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.14);
+  border: 1px solid rgba(120, 120, 120, 0.35); /* Added contrast outline */
   border-radius: var(--r-pill);
   cursor: pointer;
   transition: background var(--dur-base) var(--ease-in-out);
@@ -1250,13 +1252,31 @@ ul, ol { list-style: none; }
   .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--sp-5);
+    gap: var(--sp-4);
   }
   .dashboard-grid .daily-progress-card { grid-column: 1; }
   .dashboard-grid .life-outcomes-card { grid-column: 2; }
   .dashboard-grid .insights-card { grid-column: 1 / -1; }
   .dashboard-grid .chart-card { grid-column: 1 / -1; }
   .dashboard-grid .quote-card { grid-column: 1 / -1; }
+}
+
+@media (max-width: 767px) {
+  .hide-on-mobile { display: none !important; }
+  
+  .dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+  }
+}
+
+.app-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
 }
 
 @media (min-width: 900px) {
