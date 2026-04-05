@@ -1,4 +1,6 @@
 import { store } from '../state.js'
+import { signOut } from '../supabase.js'
+import { showToast } from '../utils/toast.js'
 
 export function initHeader(container) {
   function render() {
@@ -21,23 +23,28 @@ export function initHeader(container) {
             <span class="badge-icon">🔥</span>
             <span id="header-streak">${streak}</span>
           </div>
+          <button class="btn-signout" id="signout-btn" aria-label="Sign out">Sign Out</button>
         </div>
       </header>
     `
+
     document.getElementById('hamburger-btn').addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('toggle-settings'))
+    })
+
+    document.getElementById('signout-btn').addEventListener('click', async () => {
+      try {
+        await signOut()
+        // onAuthStateChange in main.js will redirect to login
+      } catch (err) {
+        showToast('Sign out failed', 'error')
+      }
     })
   }
 
   render()
 
-  // Fast-update coins/streak without full re-render
-  store.on('coins', v => {
-    const el = document.getElementById('header-coins')
-    if (el) el.textContent = v
-  })
-  store.on('streak', v => {
-    const el = document.getElementById('header-streak')
-    if (el) el.textContent = v
-  })
+  // Fast-update without re-render
+  store.on('coins', v => { const el = document.getElementById('header-coins'); if (el) el.textContent = v })
+  store.on('streak', v => { const el = document.getElementById('header-streak'); if (el) el.textContent = v })
 }

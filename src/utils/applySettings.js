@@ -9,19 +9,43 @@ export function applySettings(s) {
 
   // Theme class
   document.body.classList.remove('theme-light', 'theme-dark', 'theme-auto')
-  document.body.classList.add('theme-' + (s.theme || 'light'))
+  const theme = s.theme || 'auto'
+  document.body.classList.add('theme-' + theme)
 
-  // Card opacity
-  const cardOp = ((s.cardOpacity ?? 88) / 100).toFixed(2)
-  root.style.setProperty('--card-opacity', cardOp)
+  // Determine dark or light
+  const isDark = theme === 'dark' ||
+    (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
-  // Card background color (convert hex to RGB)
-  if (s.cardBg) {
+  if (isDark) {
+    root.style.setProperty('--bg', 'linear-gradient(145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%)')
+    root.style.setProperty('--card-bg-rgb', '28, 28, 30')
+    root.style.setProperty('--card-opacity', '0.90')
+    root.style.setProperty('--card-border', 'rgba(255,255,255,0.10)')
+    root.style.setProperty('--text-primary', '#F5F5F7')
+    root.style.setProperty('--text-secondary', '#98989D')
+    root.style.setProperty('--text-muted', 'rgba(245,245,247,0.38)')
+  } else {
+    root.style.setProperty('--bg', 'linear-gradient(145deg, #F2F2F7 0%, #FFFFFF 50%, #E8E8ED 100%)')
+    root.style.setProperty('--card-bg-rgb', '255, 255, 255')
+    root.style.setProperty('--card-opacity', '0.82')
+    root.style.setProperty('--card-border', 'rgba(0,0,0,0.09)')
+    root.style.setProperty('--text-primary', '#1D1D1F')
+    root.style.setProperty('--text-secondary', '#6E6E73')
+    root.style.setProperty('--text-muted', 'rgba(29,29,31,0.38)')
+  }
+
+  // User-overridden card opacity
+  if (s.cardOpacity !== undefined) {
+    root.style.setProperty('--card-opacity', (s.cardOpacity / 100).toFixed(2))
+  }
+
+  // User-overridden card background color
+  if (s.cardBg && s.cardBg !== '#FFFFFF') {
     const rgb = hexToRgb(s.cardBg)
     if (rgb) root.style.setProperty('--card-bg-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`)
   }
 
-  // Text colors
+  // User-overridden text colors
   if (s.primaryText) root.style.setProperty('--text-primary', s.primaryText)
   if (s.secondaryText) root.style.setProperty('--text-secondary', s.secondaryText)
 
@@ -31,11 +55,16 @@ export function applySettings(s) {
     root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${s.accentColor} 0%, #EC4899 100%)`)
   }
 
-  // Background
-  if (s.bgType === 'gradient') {
-    root.style.setProperty('--bg', `linear-gradient(${s.bgValue || '135deg, #2A1009 0%, #5C2D0C 100%'})`)
-  } else {
-    root.style.setProperty('--bg', s.bgValue || '#2A1009')
+  // Background override (only if user explicitly customized)
+  if (s.bgType && s.bgValue) {
+    const defaultLight = '145deg, #F2F2F7 0%, #FFFFFF 50%, #E8E8ED 100%'
+    const defaultDark = '145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%'
+    const isDefault = s.bgValue === defaultLight || s.bgValue === defaultDark
+    if (!isDefault) {
+      root.style.setProperty('--bg',
+        s.bgType === 'gradient' ? `linear-gradient(${s.bgValue})` : s.bgValue
+      )
+    }
   }
 }
 
