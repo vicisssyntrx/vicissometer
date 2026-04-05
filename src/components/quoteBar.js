@@ -94,7 +94,7 @@ export function initQuoteBar(container) {
     const dailyQuote = getQuoteForToday(quotes)
 
     container.innerHTML = `
-      <div class="glass-card quote-card animate-fade-in" style="margin-top:20px;">
+      <div class="glass-card quote-card animate-fade-in">
         <div class="quote-bar">
           <div class="quote-icon">💡</div>
           <div class="quote-text-wrap">

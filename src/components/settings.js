@@ -114,14 +114,15 @@ export function initSettings() {
           <div class="settings-section-title">🖼 Background</div>
           <div class="settings-row">
             <select class="glass-select" id="bg-type-select">
-              <option value="solid" ${s.bgType === 'solid' ? 'selected' : ''}>Solid Color</option>
-              <option value="gradient" ${s.bgType === 'gradient' ? 'selected' : ''}>Gradient</option>
-              <option value="image" ${s.bgType === 'image' ? 'selected' : ''}>Image URL</option>
+              <option value="black" ${s.bgType === 'black' ? 'selected' : ''}>1. Black</option>
+              <option value="white" ${s.bgType === 'white' ? 'selected' : ''}>2. White</option>
+              <option value="image" ${s.bgType === 'image' ? 'selected' : ''}>3. Image custom upload less than 5 mb</option>
             </select>
           </div>
-          <div class="settings-row">
-            <input class="glass-input" id="bg-value" value="${s.bgValue}"
-              placeholder="${s.bgType === 'image' ? 'https://example.com/bg.jpg' : '#2A1009'}" />
+          <div class="settings-row" id="bg-upload-row" style="display:${s.bgType === 'image' ? 'block' : 'none'}">
+            <input type="file" id="bg-file-input" accept="image/*" style="display:none" />
+            <button class="btn btn-secondary" id="bg-upload-btn" style="width:100%">Choose Image...</button>
+            <input type="hidden" id="bg-value" value="${s.bgValue}" />
           </div>
           <div class="settings-row">
             <div class="settings-label">
@@ -192,6 +193,40 @@ export function initSettings() {
       document.getElementById('bg-blur-note').textContent = v + 'px'
       // Live preview
       document.documentElement.style.setProperty('--bg-blur', v + 'px')
+    })
+    
+    // Background upload logic
+    const bgTypeSelect = document.getElementById('bg-type-select')
+    const bgUploadRow = document.getElementById('bg-upload-row')
+    const bgUploadBtn = document.getElementById('bg-upload-btn')
+    const bgFileInput = document.getElementById('bg-file-input')
+    const bgValue = document.getElementById('bg-value')
+
+    bgTypeSelect?.addEventListener('change', e => {
+      bgUploadRow.style.display = e.target.value === 'image' ? 'block' : 'none'
+    })
+
+    bgUploadBtn?.addEventListener('click', () => bgFileInput.click())
+
+    bgFileInput?.addEventListener('change', e => {
+      const file = e.target.files[0]
+      if (!file) return
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('File must be less than 5MB', 'error')
+        return
+      }
+      bgUploadBtn.textContent = '⏳ Processing...'
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        bgValue.value = evt.target.result
+        bgUploadBtn.textContent = '✓ Image Loaded'
+        document.documentElement.style.setProperty('--bg', `url('${evt.target.result}') center/cover fixed no-repeat`)
+      }
+      reader.onerror = () => {
+        showToast('Error reading image', 'error')
+        bgUploadBtn.textContent = 'Choose Image...'
+      }
+      reader.readAsDataURL(file)
     })
 
     // Sign Out

@@ -55,16 +55,14 @@ export function applySettings(s) {
     root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${s.accentColor} 0%, #EC4899 100%)`)
   }
 
-  // Background override (only if user explicitly customized)
-  if (s.bgType && s.bgValue) {
-    const defaultLight = '145deg, #F2F2F7 0%, #FFFFFF 50%, #E8E8ED 100%'
-    const defaultDark = '145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%'
-    const isDefault = s.bgValue === defaultLight || s.bgValue === defaultDark
-    if (!isDefault || s.bgType === 'image') {
-      let bgStyle = s.bgValue;
-      if (s.bgType === 'gradient') bgStyle = `linear-gradient(${s.bgValue})`
-      else if (s.bgType === 'image') bgStyle = `url('${s.bgValue}') center/cover fixed no-repeat`
-      root.style.setProperty('--bg', bgStyle)
+  // Background override
+  if (s.bgType) {
+    if (s.bgType === 'black') {
+      root.style.setProperty('--bg', '#000000')
+    } else if (s.bgType === 'white') {
+      root.style.setProperty('--bg', '#FFFFFF')
+    } else if (s.bgType === 'image' && s.bgValue) {
+      root.style.setProperty('--bg', `url('${s.bgValue}') center/cover fixed no-repeat`)
     }
   }
 

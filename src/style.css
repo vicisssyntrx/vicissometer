@@ -495,8 +495,8 @@ ul, ol { list-style: none; }
 .habit-item:hover { background: rgba(0,0,0,0.07); }
 .habit-item:active { transform: scale(0.98); }
 .habit-item.completed {
-  background: rgba(139,92,246,0.08);
-  border-color: rgba(139,92,246,0.18);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .habit-icon { font-size: 1.35rem; flex-shrink: 0; line-height: 1; }
@@ -637,7 +637,7 @@ ul, ol { list-style: none; }
 .btn:disabled:active { transform: none; }
 
 .btn-primary {
-  background: var(--accent-gradient);
+  background: var(--accent);
   color: white;
   box-shadow: 0 4px 16px rgba(139,92,246,0.35), 0 1px 4px rgba(0,0,0,0.1);
   width: 100%;
@@ -654,9 +654,9 @@ ul, ol { list-style: none; }
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
   transition: left 0.5s var(--ease-in-out);
 }
-.btn-primary:hover::after { left: 100%; }
 .btn-primary:hover {
-  box-shadow: 0 6px 24px rgba(139,92,246,0.5), 0 2px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 24px rgba(139,92,246,0.35), 0 2px 8px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
