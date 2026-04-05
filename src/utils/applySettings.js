@@ -20,7 +20,7 @@ export function applySettings(s) {
     root.style.setProperty('--bg', 'linear-gradient(145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%)')
     root.style.setProperty('--card-bg-rgb', '28, 28, 30')
     root.style.setProperty('--card-opacity', '0.90')
-    root.style.setProperty('--card-border', 'rgba(255,255,255,0.10)')
+    root.style.setProperty('--card-border', 'rgba(255,255,255,0.18)')
     root.style.setProperty('--text-primary', '#F5F5F7')
     root.style.setProperty('--text-secondary', '#98989D')
     root.style.setProperty('--text-muted', 'rgba(245,245,247,0.38)')

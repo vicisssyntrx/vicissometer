@@ -77,19 +77,15 @@ export function initDailyProgress(container) {
             }
           </div>
 
-          <div class="progress-section">
+          <div class="progress-section" style="margin-bottom: var(--sp-4);">
             <div class="progress-label">
-              <span class="progress-label-text">Today\'s Progress:</span>
+              <span class="progress-label-text">Today's Progress:</span>
               <span class="progress-value" id="dp-pct-value">${pct.toFixed(2)}%</span>
             </div>
             <div class="progress-track">
               <div class="progress-fill progress-fill-accent" id="dp-progress-fill" style="width:${pct}%"></div>
             </div>
           </div>
-
-          <button class="btn btn-primary" id="save-progress-btn" style="margin-top:16px">
-            <span>💾</span> Save Progress
-          </button>
 
           <div class="btn-row">
             <button class="btn btn-secondary" id="open-habits-btn">
@@ -120,10 +116,11 @@ export function initDailyProgress(container) {
     datePicker.addEventListener('change', async e => {
       store.set('selectedDate', e.target.value)
       await loadDateProgress(e.target.value)
+      render() // re-render to update UI for the new date
     })
 
     // Toggle via checkbox
-    habitsList.addEventListener('change', e => {
+    habitsList.addEventListener('change', async e => {
       const cb = e.target.closest('input[type="checkbox"]')
       if (!cb) return
       const hid = cb.dataset.habitId
@@ -132,6 +129,19 @@ export function initDailyProgress(container) {
       const item = container.querySelector(`.habit-item[data-habit-id="${hid}"]`)
       if (item) item.classList.toggle('completed', cb.checked)
       recomputePct()
+
+      // Auto-save
+      try {
+        const date = store.get('selectedDate')
+        await saveDailyProgress(date, state)
+        
+        const all = await getAllProgress()
+        store.set('allProgress', all)
+        await recalcGlobalStats(all)
+      } catch (err) {
+        showToast('Saving failed: ' + err.message, 'error')
+        console.error(err)
+      }
     })
 
     // Toggle via row click
@@ -142,38 +152,6 @@ export function initDailyProgress(container) {
       if (cb) {
         cb.checked = !cb.checked
         cb.dispatchEvent(new Event('change', { bubbles: true }))
-      }
-    })
-
-    // Save
-    saveBtn.addEventListener('click', async () => {
-      if (saving) return
-      saving = true
-      const btn = container.querySelector('#save-progress-btn')
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…' }
-
-      try {
-        const date = store.get('selectedDate')
-        const state = store.get('todayState')
-        await saveDailyProgress(date, state)
-
-        const all = await getAllProgress()
-        store.set('allProgress', all)
-        await recalcGlobalStats(all)
-
-        if (btn) { btn.innerHTML = '<span>✓</span> Saved!'; }
-        showToast('Progress saved! 🎉', 'success')
-        setTimeout(() => {
-          const b = container.querySelector('#save-progress-btn')
-          if (b) { b.disabled = false; b.innerHTML = '<span>💾</span> Save Progress' }
-        }, 1800)
-      } catch (err) {
-        showToast('Save failed: ' + err.message, 'error')
-        const b = container.querySelector('#save-progress-btn')
-        if (b) { b.disabled = false; b.innerHTML = '<span>💾</span> Save Progress' }
-        console.error(err)
-      } finally {
-        saving = false
       }
     })
 

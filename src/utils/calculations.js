@@ -169,26 +169,23 @@ export function computeStreak(allProgress, habits) {
   return streak
 }
 
-/**
- * Compute coins from progress
- * Each fully completed day = 10 coins
- * Partial = proportional
- * Streak bonus: +5 per day in current streak
- */
 export function computeCoins(allProgress, habits) {
   if (!allProgress.length || !habits.length) return 0
   const byDate = {}
   allProgress.forEach(r => {
-    if (!byDate[r.date]) byDate[r.date] = { done: 0, total: 0 }
-    byDate[r.date].total++
-    if (r.completed) byDate[r.date].done++
+    if (!byDate[r.date]) byDate[r.date] = { hits: 0, weight: 0 }
+    const habit = habits.find(h => h.id === r.habit_id)
+    const w = habit ? habit.weight : 0
+    byDate[r.date].weight += w
+    if (r.completed) byDate[r.date].hits += w
   })
+
   let coins = 0
-  Object.values(byDate).forEach(({ done, total }) => {
-    if (total > 0) coins += Math.round((done / total) * 10)
+  Object.values(byDate).forEach(({ hits, weight }) => {
+    // 100% completion (allowing small float differences) = 1 Vicissitude
+    if (weight > 0 && Math.abs(hits - weight) < 0.1) {
+      coins++
+    }
   })
-  // Streak bonus
-  const streak = computeStreak(allProgress, habits)
-  coins += streak * 5
   return coins
 }

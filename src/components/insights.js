@@ -33,8 +33,10 @@ export function initInsights(container) {
     const profile = store.get('profile')
     const settings = store.get('settings')
     const startDate = profile?.start_date || settings.startDate
-    const completedDays = store.get('completedDaysCount')
-    const totalDays = daysBetween(startDate, today()) + 1
+    const completedDays = store.get('completedDaysCount') || 0
+    const all = store.get('allProgress') || []
+    const trackedDates = new Set(all.map(r => r.date))
+    const totalDays = trackedDates.size
     const growthFactor = computeGrowth()
 
     container.innerHTML = `

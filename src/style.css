@@ -107,7 +107,7 @@ ul, ol { list-style: none; }
   --bg: linear-gradient(145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%);
   --card-bg-rgb: 28, 28, 30;
   --card-opacity: 0.90;
-  --card-border: rgba(255, 255, 255, 0.10);
+  --card-border: rgba(255, 255, 255, 0.18);
   --text-primary: #F5F5F7;
   --text-secondary: #98989D;
   --text-muted: rgba(245, 245, 247, 0.38);
@@ -122,7 +122,7 @@ ul, ol { list-style: none; }
     --bg: linear-gradient(145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%);
     --card-bg-rgb: 28, 28, 30;
     --card-opacity: 0.90;
-    --card-border: rgba(255, 255, 255, 0.10);
+    --card-border: rgba(255, 255, 255, 0.18);
     --text-primary: #F5F5F7;
     --text-secondary: #98989D;
     --text-muted: rgba(245, 245, 247, 0.38);
@@ -1253,11 +1253,12 @@ ul, ol { list-style: none; }
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--sp-4);
+    align-items: start;
   }
-  .dashboard-grid .daily-progress-card { grid-column: 1; }
-  .dashboard-grid .life-outcomes-card { grid-column: 2; }
-  .dashboard-grid .insights-card { grid-column: 1 / -1; }
-  .dashboard-grid .chart-card { grid-column: 1 / -1; }
+  .dashboard-grid .daily-progress-card { grid-column: 1; grid-row: 1 / 3; }
+  .dashboard-grid .chart-card { grid-column: 2; grid-row: 1; }
+  .dashboard-grid .insights-card { grid-column: 2; grid-row: 2; }
+  .dashboard-grid .life-outcomes-card { grid-column: 1; grid-row: 3; }
   .dashboard-grid .quote-card { grid-column: 1 / -1; }
 }
 

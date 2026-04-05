@@ -117,9 +117,9 @@ async function renderDashboard(userId) {
         <main class="main-content" id="main-content">
           <div class="dashboard-grid" id="dashboard-grid">
             <div id="daily-progress-mount"></div>
+            <div id="chart-mount"></div>
             <div id="life-outcomes-mount"></div>
             <div id="insights-mount"></div>
-            <div id="chart-mount"></div>
           </div>
           <div id="quote-mount"></div>
         </main>

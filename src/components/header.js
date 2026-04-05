@@ -12,8 +12,8 @@ export function initHeader(container) {
           <button class="hamburger-btn" id="hamburger-btn" aria-label="Open settings">
             <span></span><span></span><span></span>
           </button>
-          <img src="/logo.png" alt="Logo" class="app-logo" />
-          <span class="header-brand hide-on-mobile">Vicissometer</span>
+          <img src="/logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'; document.getElementById('header-brand').classList.remove('hide-on-mobile')" />
+          <span class="header-brand hide-on-mobile" id="header-brand">Vicissometer</span>
         </div>
         <div class="header-right">
           <div class="header-badge badge-coins">
