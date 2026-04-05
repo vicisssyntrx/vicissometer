@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Vicissometer — Track your 1% daily growth with compound habit building. Watch tiny daily wins become extraordinary life outcomes." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#2A1009" />
+  <meta property="og:title" content="Vicissometer — 1% Daily Growth Tracker" />
+  <meta property="og:description" content="Your compound habit tracker. 1% better every day." />
+  <title>Vicissometer — 1% Daily Growth Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Loading screen — replaced by main app on init -->
+    <div id="loading-screen">
+      <div class="loading-glass">
+        <div class="loading-orb">
+          <div class="loading-orb-inner">⚙️</div>
+          <div class="loading-ring ring-1"></div>
+          <div class="loading-ring ring-2"></div>
+          <div class="loading-ring ring-3"></div>
+        </div>
+        <h1 class="loading-title">Vicissometer</h1>
+        <p class="loading-sub">Loading your journey…</p>
+        <div class="loading-bar">
+          <div class="loading-bar-fill" id="loading-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
