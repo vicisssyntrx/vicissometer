@@ -94,25 +94,17 @@ export function initQuoteBar(container) {
     const dailyQuote = getQuoteForToday(quotes)
 
     container.innerHTML = `
-      <div class="glass-card quote-card animate-fade-in">
-        <div class="quote-bar">
-          <div class="quote-icon">💡</div>
-          <div class="quote-text-wrap">
-            <p class="quote-text" id="quote-text">
-              "${dailyQuote.text}" <strong>— ${dailyQuote.author}</strong>
+      <div class="glass-card quote-card animate-fade-in" style="width:100%">
+        <div class="quote-bar" style="padding: 20px; justify-content: center; text-align: center;">
+          <div class="quote-text-wrap" style="width:100%">
+            <p class="quote-text" id="quote-text" style="font-size: 1.1rem; line-height: 1.5; margin: 0;">
+              "${dailyQuote.text}" <br/>
+              <span style="font-size: 0.9rem; opacity: 0.8; font-weight: 600; margin-top: 8px; display: block;">— ${dailyQuote.author}</span>
             </p>
-          </div>
-          <div class="quote-actions">
-            <button class="quote-btn" id="quote-settings" aria-label="Quote settings">⚙️</button>
           </div>
         </div>
       </div>
     `
-
-    const btn = document.getElementById('quote-settings')
-    if (btn) {
-      btn.addEventListener('click', openQuotesModal)
-    }
   }
 
   // Render immediately

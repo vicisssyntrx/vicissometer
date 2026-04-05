@@ -134,6 +134,35 @@ export function initSettings() {
           </div>
         </div>
 
+        <!-- Branding -->
+        <div class="settings-section">
+          <div class="settings-section-title">🏷 Branding</div>
+          <div class="settings-row">
+            <div class="settings-label">App Logo</div>
+            <div style="display:flex; gap:12px; align-items:center; margin-top:8px">
+              <img id="logo-preview" src="${store.get('appLogo')}" 
+                style="width:48px; height:48px; border-radius:12px; object-fit:contain; background:rgba(0,0,0,0.05); border:1px solid var(--card-border)" />
+              <button class="btn btn-secondary" id="logo-upload-btn" style="flex:1; padding:8px">Change Logo...</button>
+              <input type="file" id="logo-file-input" accept="image/*" style="display:none" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Quotes Section -->
+        <div class="settings-section">
+          <div class="settings-section-title">💡 Custom Quotes</div>
+          <div class="settings-row">
+            <div class="settings-label">Edit Quotes (JSON format)</div>
+            <textarea id="quotes-textarea" class="glass-input" 
+              style="width:100%; height:120px; font-family:monospace; font-size:0.75rem; padding:10px; margin-top:8px"
+              placeholder='["Quote text" - Author]'
+            >${s.customQuotes || ''}</textarea>
+            <div class="settings-tip" style="margin-top:8px">
+              Format: <code>["The best project you'll ever work on is you." - Anonymous]</code> (One per line)
+            </div>
+          </div>
+        </div>
+
         <!-- Dates -->
         <div class="settings-section">
           <div class="settings-section-title">📅 Dates</div>
@@ -144,9 +173,6 @@ export function initSettings() {
           <div class="settings-row">
             <div class="settings-label">Target Date</div>
             <input type="date" class="glass-date" id="target-date" value="${targetDate}" />
-          </div>
-          <div class="settings-tip">
-            💡 The best time to start was yesterday. The next best time is today!
           </div>
         </div>
 
@@ -229,6 +255,32 @@ export function initSettings() {
       reader.readAsDataURL(file)
     })
 
+    // Logo upload logic
+    const logoUploadBtn = document.getElementById('logo-upload-btn')
+    const logoFileInput = document.getElementById('logo-file-input')
+    const logoPreview = document.getElementById('logo-preview')
+
+    logoUploadBtn?.addEventListener('click', () => logoFileInput.click())
+
+    logoFileInput?.addEventListener('change', e => {
+      const file = e.target.files[0]
+      if (!file) return
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Logo must be less than 2MB', 'error')
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        const data = evt.target.result
+        store.set('appLogo', data)
+        if (logoPreview) logoPreview.src = data
+        // Update header logo live
+        const headerLogo = document.querySelector('.app-logo')
+        if (headerLogo) headerLogo.src = data
+      }
+      reader.readAsDataURL(file)
+    })
+
     // Sign Out
     document.getElementById('settings-signout')?.addEventListener('click', async () => {
       if (!confirm('Are you sure you want to sign out?')) return
@@ -297,7 +349,7 @@ export function initSettings() {
       bgBlur: parseInt(document.getElementById('bg-blur')?.value || cur.bgBlur || 0),
       startDate: document.getElementById('start-date')?.value || cur.startDate,
       targetDate: document.getElementById('target-date')?.value || cur.targetDate,
-      customQuotes: cur.customQuotes,
+      customQuotes: document.getElementById('quotes-textarea')?.value || cur.customQuotes,
     }
   }
 

@@ -67,7 +67,7 @@ export function initInsights(container) {
   }
 
   render()
-  store.on('allProgress', () => { if (container.isConnected) render() })
+  store.on('allProgressSaved', () => { if (container.isConnected) render() })
   store.on('habits', () => { if (container.isConnected) render() })
   store.on('completedDaysCount', () => { if (container.isConnected) render() })
 }

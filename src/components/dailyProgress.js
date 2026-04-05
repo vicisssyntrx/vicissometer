@@ -128,20 +128,19 @@ export function initDailyProgress(container) {
       const cb = e.target.closest('input[type="checkbox"]')
       if (!cb) return
       const hid = cb.dataset.habitId
-      const state = { ...store.get('todayState'), [hid]: cb.checked }
-      store.set('todayState', state)
+      const newState = { ...store.get('todayState'), [hid]: cb.checked }
+      store.set('todayState', newState)
+      
       const item = container.querySelector(`.habit-item[data-habit-id="${hid}"]`)
       if (item) item.classList.toggle('completed', cb.checked)
-      recomputePct()
+      
+      recomputePct() // Ensure this uses the latest updated state
 
-      // Auto-save
+      // Auto-save toggle state immediately
       try {
         const date = store.get('selectedDate')
         await saveDailyProgress(date, state)
-        
-        const all = await getAllProgress()
-        store.set('allProgress', all)
-        await recalcGlobalStats(all)
+        // Note: Global stats (coins/streaks) only update on manual Save Progress click
       } catch (err) {
         showToast('Saving failed: ' + err.message, 'error')
         console.error(err)
@@ -191,14 +190,20 @@ export function initDailyProgress(container) {
     })
 
     // Reset toggles
-    resetBtn?.addEventListener('click', () => {
+    resetBtn?.addEventListener('click', async () => {
       const habits = store.get('habits').filter(h => h.active)
       const state = {}
       habits.forEach(h => { state[h.id] = false })
       store.set('todayState', state)
-      recomputePct()
-      render()
-      showToast('Toggles reset', 'warning')
+      
+      try {
+        await saveDailyProgress(store.get('selectedDate'), state)
+        recomputePct()
+        render()
+        showToast('Toggles reset and saved ✓', 'warning')
+      } catch (err) {
+        showToast('Reset failed: ' + err.message, 'error')
+      }
     })
 
     // Clear saved data

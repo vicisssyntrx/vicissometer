@@ -58,6 +58,9 @@ class Store {
 }
 
 export const store = new Store({
+  // Branding
+  appLogo: '/logo.png',
+
   // Profile
   profile: null,
 
