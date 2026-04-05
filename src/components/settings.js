@@ -47,7 +47,10 @@ export function initSettings() {
 
     drawer.innerHTML = `
       <div class="settings-header">
-        <div class="settings-title">⚙️ Settings</div>
+        <div class="settings-brand-wrap">
+          <img src="/full-logo.png" class="settings-full-logo" alt="Vicissometer Branding" />
+          <div class="settings-title">⚙️ Settings</div>
+        </div>
         <button class="close-btn" id="settings-close">✕</button>
       </div>
 

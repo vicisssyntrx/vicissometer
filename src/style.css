@@ -1787,3 +1787,45 @@ ul, ol { list-style: none; }
   background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
   box-shadow: 0 0 8px var(--accent-gradient-glow);
 }
+
+/* --- Full Logo Branding --- */
+.header-full-logo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  margin-left: 8px;
+  transition: opacity 0.3s ease;
+}
+
+.settings-brand-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 0;
+}
+
+.settings-full-logo {
+  max-width: 220px;
+  height: auto;
+  object-fit: contain;
+}
+
+.settings-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Ensure header logo doesn't disappear if error triggers */
+.app-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
