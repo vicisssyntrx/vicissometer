@@ -3,6 +3,8 @@ import { addHabit, updateHabit, deleteHabit, getHabits } from '../db.js'
 import { showToast } from '../utils/toast.js'
 
 export function initHabitsModal() {
+  document.getElementById('habits-modal-overlay')?.remove()
+
   const overlay = document.createElement('div')
   overlay.className = 'modal-overlay'
   overlay.id = 'habits-modal-overlay'
@@ -20,18 +22,15 @@ export function initHabitsModal() {
   }
 
   function computeWeightWarning(habits, newWeight) {
-    const existing = habits.reduce((s, h) => s + h.weight, 0)
-    const total = existing + newWeight
-    if (Math.abs(total - 100) > 0.5) {
-      return `Total weight would be ${total.toFixed(1)}% (should be 100%)`
-    }
     return null
   }
 
-  function normalizeWeights(habits) {
-    const total = habits.reduce((s, h) => s + h.weight, 0)
-    if (total === 0) return habits
-    return habits.map(h => ({ ...h, weight: parseFloat(((h.weight / total) * 100).toFixed(2)) }))
+  async function autoEqualizeWeights() {
+    const list = await getHabits()
+    if (list.length === 0) return list
+    const eqWeight = parseFloat((100 / list.length).toFixed(2))
+    await Promise.all(list.map(h => updateHabit(h.id, { weight: eqWeight })))
+    return await getHabits()
   }
 
   function renderModal() {
@@ -58,8 +57,6 @@ export function initHabitsModal() {
             <div class="add-habit-form-title">➕ Add New Habit</div>
             <div class="add-habit-grid">
               <input class="glass-input" id="new-habit-icon" placeholder="Icon (emoji)" maxlength="4" value="⭐" />
-              <input class="glass-input" id="new-habit-weight" type="number" min="1" max="100" step="0.5"
-                placeholder="Weight %" value="${Math.max(0, (100 - habits.reduce((s,h)=>s+h.weight,0))).toFixed(1)}" />
               <input class="glass-input add-habit-grid-full" id="new-habit-name" placeholder="Habit name" />
               <input class="glass-input" id="new-habit-outcome" placeholder="Life outcome" />
               <input class="glass-input" id="new-habit-outcome-icon" placeholder="Outcome icon" maxlength="4" value="🎯" />
@@ -72,14 +69,10 @@ export function initHabitsModal() {
         <div class="modal-footer">
           <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
             <div style="font-size:0.75rem;color:var(--text-muted)">
-              Total weight: <strong id="total-weight">${habits.reduce((s,h)=>s+h.weight,0).toFixed(1)}%</strong>
-              ${Math.abs(habits.reduce((s,h)=>s+h.weight,0) - 100) > 0.5
-                ? '<span style="color:var(--red)"> ⚠ Not 100%</span>'
-                : '<span style="color:var(--green)"> ✓</span>'
-              }
+              Weights are distributed equally automatically (100% total)
             </div>
             <button class="btn btn-secondary" id="normalize-btn" style="padding:8px 14px;font-size:0.78rem">
-              ⚖ Normalize to 100%
+              ⚖ Equalize Now
             </button>
           </div>
         </div>
@@ -99,7 +92,7 @@ export function initHabitsModal() {
         if (!confirm(`Delete "${name}"? This will remove all its progress data.`)) return
         try {
           await deleteHabit(id)
-          const updated = await getHabits()
+          const updated = await autoEqualizeWeights()
           store.set('habits', updated)
           showToast(`"${name}" deleted`, 'warning')
           renderModal()
@@ -125,13 +118,10 @@ export function initHabitsModal() {
 
     // Normalize
     document.getElementById('normalize-btn').addEventListener('click', async () => {
-      const habits = store.get('habits')
-      const normalized = normalizeWeights(habits)
       try {
-        await Promise.all(normalized.map(h => updateHabit(h.id, { weight: h.weight })))
-        const updated = await getHabits()
+        const updated = await autoEqualizeWeights()
         store.set('habits', updated)
-        showToast('Weights normalized to 100% ✓', 'success')
+        showToast('Weights equalized to 100% ✓', 'success')
         renderModal()
       } catch (err) {
         showToast('Normalize failed', 'error')
@@ -144,7 +134,6 @@ export function initHabitsModal() {
       const icon = document.getElementById('new-habit-icon').value.trim() || '⭐'
       const outcome = document.getElementById('new-habit-outcome').value.trim() || 'Growth'
       const outcomeIcon = document.getElementById('new-habit-outcome-icon').value.trim() || '🎯'
-      const weight = parseFloat(document.getElementById('new-habit-weight').value) || 10
 
       if (!name) { showToast('Please enter a habit name', 'error'); return }
 
@@ -165,11 +154,11 @@ export function initHabitsModal() {
           icon,
           life_outcome: outcome,
           life_outcome_icon: outcomeIcon,
-          weight,
+          weight: 0, // will be auto-equalized
           active: true,
           sort_order: habits.length,
         })
-        const updated = await getHabits()
+        const updated = await autoEqualizeWeights()
         store.set('habits', updated)
         showToast(`"${name}" added! ✓`, 'success')
         renderModal()

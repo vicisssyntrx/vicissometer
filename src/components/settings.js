@@ -4,6 +4,9 @@ import { applySettings } from '../utils/applySettings.js'
 import { showToast } from '../utils/toast.js'
 
 export function initSettings() {
+  document.getElementById('settings-overlay')?.remove()
+  document.getElementById('settings-drawer')?.remove()
+
   // Create overlay + drawer DOM
   const overlay = document.createElement('div')
   overlay.className = 'settings-overlay'
@@ -229,16 +232,37 @@ export function initSettings() {
       bgValue: document.getElementById('bg-value')?.value || cur.bgValue,
       startDate: document.getElementById('start-date')?.value || cur.startDate,
       targetDate: document.getElementById('target-date')?.value || cur.targetDate,
+      customQuotes: cur.customQuotes,
     }
   }
 
-  // Update color value labels live
+  // Update color value labels and live preview
   drawer.addEventListener('input', e => {
     if (e.target.type === 'color') {
       const valEl = document.getElementById(e.target.id + '-val')
       if (valEl) valEl.textContent = e.target.value
+
+      // Live CSS preview
+      if (e.target.id === 'card-bg-color') {
+        document.documentElement.style.setProperty('--card-bg-rgb', hexToRgb(e.target.value))
+      } else if (e.target.id === 'primary-text-color') {
+        document.documentElement.style.setProperty('--text-primary', e.target.value)
+      } else if (e.target.id === 'secondary-text-color') {
+        document.documentElement.style.setProperty('--text-secondary', e.target.value)
+      } else if (e.target.id === 'accent-color') {
+        document.documentElement.style.setProperty('--accent', e.target.value)
+        document.documentElement.style.setProperty('--accent-glow', e.target.value + '40')
+      }
     }
   })
+
+  // Helper for live preview
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `${r}, ${g}, ${b}`
+  }
 
   // Toggle via hamburger event
   document.addEventListener('toggle-settings', () => {

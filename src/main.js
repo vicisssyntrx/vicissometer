@@ -115,13 +115,13 @@ async function renderDashboard(userId) {
       <div class="app-layout">
         <div id="header-mount"></div>
         <main class="main-content" id="main-content">
-          <div id="quote-mount"></div>
           <div class="dashboard-grid" id="dashboard-grid">
             <div id="daily-progress-mount"></div>
             <div id="life-outcomes-mount"></div>
             <div id="insights-mount"></div>
             <div id="chart-mount"></div>
           </div>
+          <div id="quote-mount"></div>
         </main>
         <footer class="app-footer">
           <p>1 Percentometer &nbsp;|&nbsp; Made with <span class="heart">❤️</span> by Viciss_Syntrx</p>
