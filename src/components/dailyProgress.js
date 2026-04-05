@@ -10,6 +10,7 @@ import { computeTodayPct, computeStreak, computeCoins, today } from '../utils/ca
 import { showToast } from '../utils/toast.js'
 
 export function initDailyProgress(container) {
+  if (!container) return // safety guard
   let saving = false
 
   async function loadDateProgress(date) {
@@ -30,8 +31,9 @@ export function initDailyProgress(container) {
   }
 
   function updateProgressDisplay(pct) {
-    const valEl = document.getElementById('dp-pct-value')
-    const fillEl = document.getElementById('dp-progress-fill')
+    // Use container.querySelector — works even if container is temporarily detached
+    const valEl = container.querySelector('#dp-pct-value')
+    const fillEl = container.querySelector('#dp-progress-fill')
     if (valEl) valEl.textContent = pct.toFixed(2) + '%'
     if (fillEl) fillEl.style.width = pct + '%'
   }
@@ -104,29 +106,38 @@ export function initDailyProgress(container) {
       </div>
     `
 
+    // --- All queries use container.querySelector instead of document.getElementById ---
+    const datePicker = container.querySelector('#date-picker')
+    const habitsList = container.querySelector('#habits-list')
+    const saveBtn = container.querySelector('#save-progress-btn')
+    const openHabitsBtn = container.querySelector('#open-habits-btn')
+    const resetBtn = container.querySelector('#reset-btn')
+    const clearBtn = container.querySelector('#clear-btn')
+
+    if (!datePicker || !habitsList || !saveBtn) return // detached or not rendered
+
     // Date picker
-    document.getElementById('date-picker').addEventListener('change', async e => {
+    datePicker.addEventListener('change', async e => {
       store.set('selectedDate', e.target.value)
       await loadDateProgress(e.target.value)
     })
 
-    // Toggle checkboxes via habit-item click or checkbox click
-    document.getElementById('habits-list').addEventListener('change', e => {
+    // Toggle via checkbox
+    habitsList.addEventListener('change', e => {
       const cb = e.target.closest('input[type="checkbox"]')
       if (!cb) return
       const hid = cb.dataset.habitId
       const state = { ...store.get('todayState'), [hid]: cb.checked }
       store.set('todayState', state)
-      // Update item styling
       const item = container.querySelector(`.habit-item[data-habit-id="${hid}"]`)
       if (item) item.classList.toggle('completed', cb.checked)
       recomputePct()
     })
 
-    document.getElementById('habits-list').addEventListener('click', e => {
+    // Toggle via row click
+    habitsList.addEventListener('click', e => {
       const item = e.target.closest('.habit-item')
       if (!item || e.target.closest('label')) return
-      const hid = item.dataset.habitId
       const cb = item.querySelector('input[type="checkbox"]')
       if (cb) {
         cb.checked = !cb.checked
@@ -135,44 +146,44 @@ export function initDailyProgress(container) {
     })
 
     // Save
-    document.getElementById('save-progress-btn').addEventListener('click', async () => {
+    saveBtn.addEventListener('click', async () => {
       if (saving) return
       saving = true
-      const btn = document.getElementById('save-progress-btn')
-      btn.disabled = true
-      btn.textContent = '⏳ Saving…'
+      const btn = container.querySelector('#save-progress-btn')
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…' }
 
       try {
         const date = store.get('selectedDate')
         const state = store.get('todayState')
         await saveDailyProgress(date, state)
 
-        // Refresh all progress + recalculate
         const all = await getAllProgress()
         store.set('allProgress', all)
         await recalcGlobalStats(all)
 
-        btn.innerHTML = '<span>✓</span> Saved!'
+        if (btn) { btn.innerHTML = '<span>✓</span> Saved!'; }
         showToast('Progress saved! 🎉', 'success')
         setTimeout(() => {
-          if (btn) { btn.disabled = false; btn.innerHTML = '<span>💾</span> Save Progress' }
+          const b = container.querySelector('#save-progress-btn')
+          if (b) { b.disabled = false; b.innerHTML = '<span>💾</span> Save Progress' }
         }, 1800)
       } catch (err) {
         showToast('Save failed: ' + err.message, 'error')
-        if (btn) { btn.disabled = false; btn.innerHTML = '<span>💾</span> Save Progress' }
+        const b = container.querySelector('#save-progress-btn')
+        if (b) { b.disabled = false; b.innerHTML = '<span>💾</span> Save Progress' }
         console.error(err)
       } finally {
         saving = false
       }
     })
 
-    // Habits modal
-    document.getElementById('open-habits-btn').addEventListener('click', () => {
+    // Open habits modal
+    openHabitsBtn?.addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('open-habits'))
     })
 
-    // Reset
-    document.getElementById('reset-btn').addEventListener('click', () => {
+    // Reset toggles
+    resetBtn?.addEventListener('click', () => {
       const habits = store.get('habits').filter(h => h.active)
       const state = {}
       habits.forEach(h => { state[h.id] = false })
@@ -182,8 +193,8 @@ export function initDailyProgress(container) {
       showToast('Toggles reset', 'warning')
     })
 
-    // Clear
-    document.getElementById('clear-btn').addEventListener('click', async () => {
+    // Clear saved data
+    clearBtn?.addEventListener('click', async () => {
       if (!confirm('Clear all saved progress for this date?')) return
       try {
         await clearDailyProgress(store.get('selectedDate'))
@@ -218,8 +229,9 @@ export function initDailyProgress(container) {
   render()
   loadDateProgress(store.get('selectedDate'))
 
-  // Re-render when habits change (e.g., after modal save)
+  // Re-render when habits change (e.g., after habits modal save)
   store.on('habits', () => {
+    if (!container.isConnected) return // skip if container is detached
     render()
     loadDateProgress(store.get('selectedDate'))
   })

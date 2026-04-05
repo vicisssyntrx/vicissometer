@@ -44,6 +44,6 @@ export function initLifeOutcomes(container) {
 
   render()
 
-  store.on('allProgress', render)
-  store.on('habits', render)
+  store.on('allProgress', () => { if (container.isConnected) render() })
+  store.on('habits', () => { if (container.isConnected) render() })
 }

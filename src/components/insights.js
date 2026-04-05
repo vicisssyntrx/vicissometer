@@ -69,7 +69,7 @@ export function initInsights(container) {
   }
 
   render()
-  store.on('allProgress', render)
-  store.on('habits', render)
-  store.on('completedDaysCount', render)
+  store.on('allProgress', () => { if (container.isConnected) render() })
+  store.on('habits', () => { if (container.isConnected) render() })
+  store.on('completedDaysCount', () => { if (container.isConnected) render() })
 }

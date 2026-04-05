@@ -41,6 +41,10 @@ class Store {
     this._listeners[key] = this._listeners[key].filter(f => f !== fn)
   }
 
+  reset() {
+    this._listeners = {}
+  }
+
   _emit(key, value) {
     if (this._listeners[key]) {
       this._listeners[key].forEach(fn => fn(value))

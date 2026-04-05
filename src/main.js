@@ -67,6 +67,10 @@ async function renderDashboard(userId) {
   if (appState === 'dashboard') return // already showing dashboard
   appState = 'dashboard'
 
+  // Wipe all stale component store listeners + realtime
+  store.reset()
+  teardownRealtime()
+
   try {
     setLoadingProgress(20)
     setCurrentUser(userId)
