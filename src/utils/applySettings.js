@@ -52,17 +52,18 @@ export function applySettings(s) {
   // Accent color
   if (s.accentColor) {
     root.style.setProperty('--accent', s.accentColor)
-    root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${s.accentColor} 0%, #EC4899 100%)`)
+    root.style.setProperty('--accent-gradient', s.accentColor)
   }
 
-  // Background override
+  // Background override — applied AFTER theme defaults so it always wins
   if (s.bgType) {
     if (s.bgType === 'black') {
       root.style.setProperty('--bg', '#000000')
     } else if (s.bgType === 'white') {
       root.style.setProperty('--bg', '#FFFFFF')
     } else if (s.bgType === 'image' && s.bgValue) {
-      root.style.setProperty('--bg', `url('${s.bgValue}') center/cover fixed no-repeat`)
+      // Use CSS background shorthand; the dark overlay is handled via .theme-dark .app-bg::after in CSS
+      root.style.setProperty('--bg', `url('${s.bgValue}') center / cover fixed no-repeat`)
     }
   }
 

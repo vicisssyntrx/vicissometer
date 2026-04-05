@@ -48,11 +48,7 @@ export function initInsights(container) {
           <div class="insights-grid">
             <div class="insight-item">
               <div class="insight-label">Days Completed</div>
-              <div class="insight-value purple">${completedDays}/${totalDays >= 1 ? 366 : 366}</div>
-            </div>
-            <div class="insight-item">
-              <div class="insight-label">Total Days Tracked</div>
-              <div class="insight-value green">${totalDays}</div>
+              <div class="insight-value purple">${completedDays}/366</div>
             </div>
             <div class="insight-item">
               <div class="insight-label">Growth Factor 🚀</div>

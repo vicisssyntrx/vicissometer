@@ -45,6 +45,11 @@ class Store {
     this._listeners = {}
   }
 
+  // Public emit for custom events (no state change)
+  emit(key) {
+    this._emit(key)
+  }
+
   _emit(key, value) {
     if (this._listeners[key]) {
       this._listeners[key].forEach(fn => fn(value))

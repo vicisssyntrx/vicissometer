@@ -174,6 +174,7 @@ export function initChart(container) {
 
   render()
 
-  store.on('allProgress', () => { if (container.isConnected) render() })
+  // Only re-render chart when progress is explicitly saved (not on every toggle)
+  store.on('allProgressSaved', () => { if (container.isConnected) render() })
   store.on('habits', () => { if (container.isConnected) render() })
 }

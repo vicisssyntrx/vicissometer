@@ -159,7 +159,6 @@ export function initDailyProgress(container) {
       }
     })
 
-    // Manual save button
     saveBtn?.addEventListener('click', async () => {
       if (saveBtn.disabled) return
       saveBtn.disabled = true
@@ -171,6 +170,8 @@ export function initDailyProgress(container) {
         const all = await getAllProgress()
         store.set('allProgress', all)
         await recalcGlobalStats(all)
+        // Signal chart to refresh (only on explicit save)
+        store.emit('allProgressSaved')
         saveBtn.innerHTML = '<span>✓</span> Saved!'
         showToast('Progress saved! 🎉', 'success')
         setTimeout(() => {
