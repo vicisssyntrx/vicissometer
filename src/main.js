@@ -26,6 +26,10 @@ import { initHabitsModal } from './components/habitsModal.js'
 
 const app = document.getElementById('app')
 
+// ---- State flags to prevent double-render ----
+let appState = 'loading' // 'loading' | 'login' | 'dashboard'
+let realtimeChannels = []
+
 // ---- Loading progress bar ----
 function setLoadingProgress(pct) {
   const el = document.getElementById('loading-bar-fill')
@@ -36,30 +40,33 @@ function hideLoadingScreen() {
   const screen = document.getElementById('loading-screen')
   if (screen) {
     screen.classList.add('fade-out')
-    setTimeout(() => screen.remove(), 700)
+    setTimeout(() => { if (screen.parentNode) screen.remove() }, 700)
   }
 }
 
-// ---- Realtime channels ----
-let realtimeChannels = []
-
+// ---- Teardown realtime ----
 function teardownRealtime() {
   realtimeChannels.forEach(ch => {
-    try { supabase.removeChannel(ch) } catch (_) {}
+    try { ch.unsubscribe() } catch (_) {}
   })
   realtimeChannels = []
 }
 
-// ---- Render login ----
+// ---- Render login page ----
 function renderLogin() {
+  if (appState === 'login') return // already showing login
+  appState = 'login'
   teardownRealtime()
-  // Apply default settings so login page renders correctly themed
   applySettings(DEFAULT_SETTINGS)
   showLoginPage(app)
+  hideLoadingScreen()
 }
 
 // ---- Render dashboard ----
 async function renderDashboard(userId) {
+  if (appState === 'dashboard') return // already showing dashboard
+  appState = 'dashboard'
+
   try {
     setLoadingProgress(20)
     setCurrentUser(userId)
@@ -131,17 +138,15 @@ async function renderDashboard(userId) {
     setLoadingProgress(100)
     setTimeout(hideLoadingScreen, 300)
 
-    // Setup realtime
+    // Setup realtime AFTER DOM is ready
     setupRealtime()
 
   } catch (err) {
     console.error('Dashboard load failed:', err)
+    appState = 'error'
     app.innerHTML = `
       <div class="login-bg"></div>
-      <div style="
-        min-height:100dvh;display:flex;align-items:center;justify-content:center;
-        padding:24px;
-      ">
+      <div style="min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;">
         <div class="glass-card" style="max-width:340px;width:100%;text-align:center">
           <div class="glass-card-inner">
             <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
@@ -184,33 +189,34 @@ function setupRealtime() {
 
 // ---- App Bootstrap ----
 async function init() {
-  // Apply default theme before ANYTHING renders (so login/loading looks correct)
+  // Apply default theme immediately (so loading screen / login look correct)
   applySettings(DEFAULT_SETTINGS)
 
-  // Listen to auth state changes (handles login, logout, token refresh)
+  // Check for existing session first (don't rely on onAuthStateChange for initial load)
+  const session = await getSession()
+
+  if (session) {
+    // Already logged in — go straight to dashboard
+    await renderDashboard(session.user.id)
+  } else {
+    // Not logged in — show login
+    renderLogin()
+  }
+
+  // Now listen for future auth changes (login/logout)
   onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session) {
+      appState = 'loading' // allow re-render
       renderDashboard(session.user.id)
     } else if (event === 'SIGNED_OUT') {
-      // Reset store
+      appState = 'loading' // allow re-render
       store.update({
         profile: null, habits: [], todayState: {}, allProgress: [],
         coins: 0, streak: 0, completedDaysCount: 0, selectedDate: today()
       })
       renderLogin()
-      hideLoadingScreen()
     }
   })
-
-  // Check if already logged in (existing session)
-  const session = await getSession()
-
-  if (session) {
-    renderDashboard(session.user.id)
-  } else {
-    renderLogin()
-    hideLoadingScreen()
-  }
 }
 
 init()

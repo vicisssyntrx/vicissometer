@@ -63,7 +63,7 @@ export async function getOrCreateProfile() {
 
   const { data: created, error: e2 } = await supabase
     .from('profiles')
-    .insert(newProfile)
+    .upsert(newProfile, { onConflict: 'id' })
     .select()
     .single()
 
@@ -188,8 +188,8 @@ export async function clearDailyProgress(date) {
 // ---- Realtime ----
 
 export function subscribeToProgress(callback) {
-  return supabase
-    .channel('daily_progress_changes')
+  const channel = supabase.channel('daily_progress_changes')
+  channel
     .on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -197,11 +197,12 @@ export function subscribeToProgress(callback) {
       filter: `user_id=eq.${uid()}`,
     }, callback)
     .subscribe()
+  return channel
 }
 
 export function subscribeToHabits(callback) {
-  return supabase
-    .channel('habits_changes')
+  const channel = supabase.channel('habits_changes')
+  channel
     .on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -209,4 +210,5 @@ export function subscribeToHabits(callback) {
       filter: `user_id=eq.${uid()}`,
     }, callback)
     .subscribe()
+  return channel
 }
