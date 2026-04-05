@@ -87,6 +87,10 @@ export function initDailyProgress(container) {
             </div>
           </div>
 
+          <button class="btn btn-primary" id="save-progress-btn">
+            <span>💾</span> Save Progress
+          </button>
+
           <div class="btn-row">
             <button class="btn btn-secondary" id="open-habits-btn">
               <span>📋</span> Habits
@@ -152,6 +156,31 @@ export function initDailyProgress(container) {
       if (cb) {
         cb.checked = !cb.checked
         cb.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+    })
+
+    // Manual save button
+    saveBtn?.addEventListener('click', async () => {
+      if (saveBtn.disabled) return
+      saveBtn.disabled = true
+      saveBtn.innerHTML = '<span>⏳</span> Saving…'
+      try {
+        const date = store.get('selectedDate')
+        const state = store.get('todayState')
+        await saveDailyProgress(date, state)
+        const all = await getAllProgress()
+        store.set('allProgress', all)
+        await recalcGlobalStats(all)
+        saveBtn.innerHTML = '<span>✓</span> Saved!'
+        showToast('Progress saved! 🎉', 'success')
+        setTimeout(() => {
+          saveBtn.disabled = false
+          saveBtn.innerHTML = '<span>💾</span> Save Progress'
+        }, 1800)
+      } catch (err) {
+        showToast('Save failed: ' + err.message, 'error')
+        saveBtn.disabled = false
+        saveBtn.innerHTML = '<span>💾</span> Save Progress'
       }
     })
 
