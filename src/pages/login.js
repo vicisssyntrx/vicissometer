@@ -1,4 +1,4 @@
-import { signIn, signUp } from '../supabase.js'
+import { signIn, signUp, signInWithGoogle } from '../supabase.js'
 
 export function showLoginPage(app) {
   app.innerHTML = `
@@ -10,7 +10,7 @@ export function showLoginPage(app) {
       <!-- Branding -->
       <div class="login-brand">
         <div class="login-orb">
-          <div class="login-orb-icon">⚙️</div>
+          <img src="/logo.png" alt="Vicissometer Logo" class="login-logo-img" />
           <div class="login-orb-ring r1"></div>
           <div class="login-orb-ring r2"></div>
         </div>
@@ -81,6 +81,15 @@ export function showLoginPage(app) {
 
           <button type="submit" class="btn btn-primary auth-submit" id="auth-submit">
             <span id="auth-btn-text">Sign In</span>
+          </button>
+
+          <div class="auth-divider">
+            <span>OR</span>
+          </div>
+
+          <button type="button" class="btn btn-secondary auth-google" id="auth-google">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="18" height="18" />
+            <span>Sign in with Google</span>
           </button>
         </form>
 
@@ -159,6 +168,15 @@ export function showLoginPage(app) {
       showError(getFriendlyError(err.message))
       btn.disabled = false
       btn.innerHTML = `<span id="auth-btn-text">${currentTab === 'signin' ? 'Sign In' : 'Create Account'}</span>`
+    }
+  })
+
+  // Google Sign In
+  document.getElementById('auth-google').addEventListener('click', async () => {
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      showError(getFriendlyError(err.message))
     }
   })
 

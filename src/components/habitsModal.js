@@ -138,15 +138,8 @@ export function initHabitsModal() {
       if (!name) { showToast('Please enter a habit name', 'error'); return }
 
       const habits = store.get('habits')
-      // Removed computeWeightWarning(habits, weight) as 'weight' is undefined and weights are auto-equalized anyway.
       const warnEl = document.getElementById('weight-warning')
-      if (warning) {
-        warnEl.textContent = warning
-        warnEl.style.display = 'block'
-        // allow anyway
-      } else {
-        warnEl.style.display = 'none'
-      }
+      warnEl.style.display = 'none'
 
       try {
         await addHabit({

@@ -1,3 +1,6 @@
+import { store } from '../state.js'
+import { updateHead } from './updateHead.js'
+
 /**
  * Apply user settings to CSS custom properties + document class
  */
@@ -12,27 +15,29 @@ export function applySettings(s) {
   const theme = s.theme || 'auto'
   document.body.classList.add('theme-' + theme)
 
-  // Determine dark or light
-  const isDark = theme === 'dark' ||
-    (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-
-  if (isDark) {
-    root.style.setProperty('--bg', 'linear-gradient(145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%)')
-    root.style.setProperty('--card-bg-rgb', '28, 28, 30')
-    root.style.setProperty('--card-opacity', '0.90')
-    root.style.setProperty('--card-border', 'rgba(255,255,255,0.18)')
-    root.style.setProperty('--text-primary', '#F5F5F7')
-    root.style.setProperty('--text-secondary', '#98989D')
-    root.style.setProperty('--text-muted', 'rgba(245,245,247,0.38)')
+  // System theme listener (only if auto)
+  if (theme === 'auto') {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const syncTheme = (e) => {
+      document.body.classList.toggle('theme-dark', e.matches)
+      document.body.classList.toggle('theme-light', !e.matches)
+    }
+    // Initial sync
+    syncTheme(mq)
+    // Remove old listeners to avoid leaks if this is called multiple times
+    if (window._themeMqCleanup) window._themeMqCleanup()
+    mq.addEventListener('change', syncTheme)
+    window._themeMqCleanup = () => mq.removeEventListener('change', syncTheme)
   } else {
-    root.style.setProperty('--bg', 'linear-gradient(145deg, #F2F2F7 0%, #FFFFFF 50%, #E8E8ED 100%)')
-    root.style.setProperty('--card-bg-rgb', '255, 255, 255')
-    root.style.setProperty('--card-opacity', '0.82')
-    root.style.setProperty('--card-border', 'rgba(0,0,0,0.09)')
-    root.style.setProperty('--text-primary', '#1D1D1F')
-    root.style.setProperty('--text-secondary', '#6E6E73')
-    root.style.setProperty('--text-muted', 'rgba(29,29,31,0.38)')
+    // Fixed theme: clear the listener and the manual classes
+    if (window._themeMqCleanup) { window._themeMqCleanup(); window._themeMqCleanup = null; }
+    document.body.classList.toggle('theme-dark', theme === 'dark')
+    document.body.classList.toggle('theme-light', theme === 'light')
   }
+
+  // Clear root overrides that were used for base theme (now handled by classes)
+  const toClear = ['--bg', '--card-bg-rgb', '--card-opacity', '--card-border', '--text-primary', '--text-secondary', '--text-muted']
+  toClear.forEach(prop => root.style.removeProperty(prop))
 
   // User-overridden card opacity
   if (s.cardOpacity !== undefined) {
@@ -71,6 +76,12 @@ export function applySettings(s) {
   if (s.bgBlur !== undefined) {
     root.style.setProperty('--bg-blur', s.bgBlur + 'px')
   }
+
+  // Notify components (like Chart.js) that may need to re-render using computed styles
+  store.emit('settingsChanged')
+
+  // Sync document head icons
+  updateHead(s.appLogo || '/logo.png', s.accentColor)
 }
 
 function hexToRgb(hex) {

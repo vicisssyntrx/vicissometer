@@ -80,6 +80,12 @@ export function initChart(container) {
     gradYour.addColorStop(0, 'rgba(139,92,246,0.35)')
     gradYour.addColorStop(1, 'rgba(139,92,246,0.02)')
 
+    // Fetch theme colors for chart synchronization
+    const style = getComputedStyle(document.documentElement)
+    const textColor = style.getPropertyValue('--text-secondary').trim() || '#6E6E73'
+    const gridColor = isDarkMode() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+    const tooltipBg = isDarkMode() ? 'rgba(20,20,25,0.95)' : 'rgba(10,5,0,0.88)'
+
     chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
@@ -88,12 +94,12 @@ export function initChart(container) {
           {
             label: 'Your Progress',
             data: yourProgress,
-            borderColor: '#8B5CF6',
+            borderColor: accentColor,
             backgroundColor: gradYour,
             borderWidth: 2,
             pointRadius: labels.length > 60 ? 0 : 3,
             pointHoverRadius: 5,
-            pointBackgroundColor: '#8B5CF6',
+            pointBackgroundColor: accentColor,
             pointBorderColor: 'white',
             pointBorderWidth: 1.5,
             fill: true,
@@ -102,7 +108,7 @@ export function initChart(container) {
           {
             label: 'Expected (1% daily)',
             data: expected,
-            borderColor: 'rgba(120,120,140,0.5)',
+            borderColor: isDarkMode() ? 'rgba(255,255,255,0.2)' : 'rgba(120,120,140,0.5)',
             backgroundColor: 'transparent',
             borderWidth: 1.5,
             borderDash: [6, 4],
@@ -126,16 +132,16 @@ export function initChart(container) {
               boxHeight: 10,
               borderRadius: 3,
               useBorderRadius: true,
-              font: { size: 11, family: 'Inter' },
-              color: 'rgba(28,11,0,0.6)',
+              font: { size: 11, family: 'Inter', weight: '600' },
+              color: textColor,
               padding: 12,
             }
           },
           tooltip: {
-            backgroundColor: 'rgba(10,5,0,0.88)',
-            titleColor: 'rgba(255,255,255,0.9)',
-            bodyColor: 'rgba(255,255,255,0.7)',
-            borderColor: 'rgba(139,92,246,0.4)',
+            backgroundColor: tooltipBg,
+            titleColor: '#FFFFFF',
+            bodyColor: 'rgba(255,255,255,0.85)',
+            borderColor: accentColor + '66',
             borderWidth: 1,
             padding: 10,
             cornerRadius: 10,
@@ -148,9 +154,9 @@ export function initChart(container) {
         },
         scales: {
           x: {
-            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
-              color: 'rgba(28,11,0,0.45)',
+              color: textColor,
               font: { size: 10, family: 'Inter' },
               maxTicksLimit: 8,
               maxRotation: 30,
@@ -158,9 +164,9 @@ export function initChart(container) {
             border: { display: false }
           },
           y: {
-            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
-              color: 'rgba(28,11,0,0.45)',
+              color: textColor,
               font: { size: 10, family: 'Inter' },
               callback: v => v.toFixed(2) + 'x'
             },
@@ -172,9 +178,14 @@ export function initChart(container) {
     })
   }
 
+  function isDarkMode() {
+    return document.body.classList.contains('theme-dark')
+  }
+
   render()
 
-  // Only re-render chart when progress is explicitly saved (not on every toggle)
+  // Re-render chart when progress is updated or settings/theme change
   store.on('allProgressSaved', () => { if (container.isConnected) render() })
   store.on('habits', () => { if (container.isConnected) render() })
+  store.on('settingsChanged', () => { if (container.isConnected) render() })
 }

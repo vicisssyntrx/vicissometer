@@ -82,6 +82,8 @@ async function renderDashboard(userId) {
 
     // Merge settings
     const settings = { ...DEFAULT_SETTINGS, ...profile.settings }
+    if (settings.appLogo) store.set('appLogo', settings.appLogo)
+    
     store.set('settings', settings)
     applySettings(settings)
     setLoadingProgress(55)

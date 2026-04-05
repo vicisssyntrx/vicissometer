@@ -38,4 +38,7 @@ export function initHeader(container) {
   // Fast-update without re-render
   store.on('coins', v => { const el = document.getElementById('header-coins'); if (el) el.textContent = v })
   store.on('streak', v => { const el = document.getElementById('header-streak'); if (el) el.textContent = v })
+  
+  // Refresh on settings change (for logo/theme consistency)
+  store.on('settingsChanged', () => { if (container.isConnected) render() })
 }

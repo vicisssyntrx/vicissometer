@@ -128,19 +128,19 @@ export function initDailyProgress(container) {
       const cb = e.target.closest('input[type="checkbox"]')
       if (!cb) return
       const hid = cb.dataset.habitId
-      const newState = { ...store.get('todayState'), [hid]: cb.checked }
+      const currentState = store.get('todayState') || {}
+      const newState = { ...currentState, [hid]: cb.checked }
       store.set('todayState', newState)
       
       const item = container.querySelector(`.habit-item[data-habit-id="${hid}"]`)
       if (item) item.classList.toggle('completed', cb.checked)
       
-      recomputePct() // Ensure this uses the latest updated state
+      recomputePct()
 
       // Auto-save toggle state immediately
       try {
         const date = store.get('selectedDate')
-        await saveDailyProgress(date, state)
-        // Note: Global stats (coins/streaks) only update on manual Save Progress click
+        await saveDailyProgress(date, newState)
       } catch (err) {
         showToast('Saving failed: ' + err.message, 'error')
         console.error(err)

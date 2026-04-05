@@ -23,15 +23,15 @@ export const DEFAULT_HABITS = [
 
 export const DEFAULT_SETTINGS = {
   fontScale:     1.0,
-  theme:         'dark',       // light | dark | auto
+  theme:         'auto',       // light | dark | auto
   bgOpacity:     100,
   cardOpacity:   88,
-  cardBg:        '#1C1C1E',
-  primaryText:   '#F5F5F7',
-  secondaryText: '#98989D',
+  cardBg:        '',           // Empty means follow theme default
+  primaryText:   '',           // Empty means follow theme default
+  secondaryText: '',           // Empty means follow theme default
   accentColor:   '#8B5CF6',
   bgType:        'gradient',
-  bgValue:       '145deg, #000000 0%, #0A0A0A 60%, #1C1C1E 100%',
+  bgValue:       '',           // Empty means follow theme default
   startDate:     '2024-12-24',
   targetDate:    '2025-12-25',
   customQuotes:  '["The best time to plant a tree was 20 years ago. The second best time is now." - Chinese Proverb]\n["It does not matter how slowly you go as long as you do not stop." - Confucius]\n["Everything you can imagine is real." - Pablo Picasso]',

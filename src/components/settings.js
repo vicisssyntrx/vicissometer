@@ -2,6 +2,7 @@ import { store } from '../state.js'
 import { signOut } from '../supabase.js'
 import { updateSettings, updateProfile, DEFAULT_SETTINGS } from '../db.js'
 import { applySettings } from '../utils/applySettings.js'
+import { updateHead } from '../utils/updateHead.js'
 import { showToast } from '../utils/toast.js'
 
 export function initSettings() {
@@ -103,10 +104,10 @@ export function initSettings() {
         <!-- Colors -->
         <div class="settings-section">
           <div class="settings-section-title">🎨 Colors</div>
-          ${colorRow('card-bg-color', 'Card Background', s.cardBg)}
-          ${colorRow('primary-text-color', 'Primary Text', s.primaryText)}
-          ${colorRow('secondary-text-color', 'Secondary Text', s.secondaryText)}
-          ${colorRow('accent-color', 'Accent Color', s.accentColor)}
+          ${colorRow('card-bg-color', 'Card Background', s.cardBg || rgbToHex(getComputedStyle(root).getPropertyValue('--card-bg-rgb')))}
+          ${colorRow('primary-text-color', 'Primary Text', s.primaryText || getComputedStyle(root).getPropertyValue('--text-primary'))}
+          ${colorRow('secondary-text-color', 'Secondary Text', s.secondaryText || getComputedStyle(root).getPropertyValue('--text-secondary'))}
+          ${colorRow('accent-color', 'Accent Color', s.accentColor || getComputedStyle(root).getPropertyValue('--accent'))}
         </div>
 
         <!-- Background -->
@@ -140,10 +141,11 @@ export function initSettings() {
           <div class="settings-row">
             <div class="settings-label">App Logo</div>
             <div style="display:flex; gap:12px; align-items:center; margin-top:8px">
-              <img id="logo-preview" src="${store.get('appLogo')}" 
+              <img id="logo-preview" src="${s.appLogo || store.get('appLogo')}" 
                 style="width:48px; height:48px; border-radius:12px; object-fit:contain; background:rgba(0,0,0,0.05); border:1px solid var(--card-border)" />
               <button class="btn btn-secondary" id="logo-upload-btn" style="flex:1; padding:8px">Change Logo...</button>
               <input type="file" id="logo-file-input" accept="image/*" style="display:none" />
+              <input type="hidden" id="app-logo-val" value="${s.appLogo || store.get('appLogo')}" />
             </div>
           </div>
         </div>
@@ -274,9 +276,13 @@ export function initSettings() {
         const data = evt.target.result
         store.set('appLogo', data)
         if (logoPreview) logoPreview.src = data
+        const logoInput = document.getElementById('app-logo-val')
+        if (logoInput) logoInput.value = data
         // Update header logo live
         const headerLogo = document.querySelector('.app-logo')
         if (headerLogo) headerLogo.src = data
+        // Update head icons (favicon, apple-touch-icon)
+        updateHead(data)
       }
       reader.readAsDataURL(file)
     })
@@ -350,6 +356,7 @@ export function initSettings() {
       startDate: document.getElementById('start-date')?.value || cur.startDate,
       targetDate: document.getElementById('target-date')?.value || cur.targetDate,
       customQuotes: document.getElementById('quotes-textarea')?.value || cur.customQuotes,
+      appLogo: document.getElementById('app-logo-val')?.value || cur.appLogo || store.get('appLogo')
     }
   }
 
@@ -375,10 +382,18 @@ export function initSettings() {
 
   // Helper for live preview
   function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return '255, 255, 255'
     const r = parseInt(hex.slice(1, 3), 16)
     const g = parseInt(hex.slice(3, 5), 16)
     const b = parseInt(hex.slice(5, 7), 16)
     return `${r}, ${g}, ${b}`
+  }
+
+  function rgbToHex(rgbStr) {
+    if (!rgbStr) return '#FFFFFF'
+    const parts = rgbStr.split(',').map(p => parseInt(p.trim()))
+    if (parts.length < 3) return '#FFFFFF'
+    return '#' + parts.map(p => p.toString(16).padStart(2, '0')).join('').toUpperCase()
   }
 
   // Toggle via hamburger event
