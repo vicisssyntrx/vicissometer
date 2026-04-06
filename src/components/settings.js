@@ -6,6 +6,7 @@ import { updateHead } from '../utils/updateHead.js'
 import { showToast } from '../utils/toast.js'
 
 export function initSettings() {
+  const root = document.documentElement
   document.getElementById('settings-overlay')?.remove()
   document.getElementById('settings-drawer')?.remove()
 
@@ -153,6 +154,7 @@ export function initSettings() {
           </div>
         </div>
 
+
         <!-- Quotes Section -->
         <div class="settings-section">
           <div class="settings-section-title">💡 Custom Quotes</div>
@@ -260,7 +262,7 @@ export function initSettings() {
       reader.readAsDataURL(file)
     })
 
-    // Logo upload logic
+    // Log upload logic
     const logoUploadBtn = document.getElementById('logo-upload-btn')
     const logoFileInput = document.getElementById('logo-file-input')
     const logoPreview = document.getElementById('logo-preview')
@@ -288,6 +290,14 @@ export function initSettings() {
         updateHead(data)
       }
       reader.readAsDataURL(file)
+    })
+
+    // Shop and Streak event emitters
+    document.getElementById('open-shop-btn')?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('open-shop'))
+    })
+    document.getElementById('open-streak-btn')?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('open-streak'))
     })
 
     // Sign Out
@@ -399,9 +409,18 @@ export function initSettings() {
     return '#' + parts.map(p => p.toString(16).padStart(2, '0')).join('').toUpperCase()
   }
 
+  // Close on Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && isOpen) close()
+  })
+
   // Toggle via hamburger event
   document.addEventListener('toggle-settings', () => {
-    if (isOpen) close(); else open()
+    if (isOpen) {
+      close()
+    } else {
+      open()
+    }
   })
 
   // Close on overlay click

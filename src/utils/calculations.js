@@ -143,49 +143,90 @@ export function habitLifetimePct(habitId, allProgress, startDate) {
 }
 
 /**
- * Compute streak from progress records
- * @param {Array} allProgress [{date, completed}]
- * @param {Array} habits
+ * Mudra (Coins) distribution logic
+ * Total 10 mudras per day divided among N habits
  */
-export function computeStreak(allProgress, habits) {
-  if (!allProgress.length || !habits.length) return 0
-  const byDate = {}
-  allProgress.forEach(r => {
-    if (!byDate[r.date]) byDate[r.date] = 0
-    if (r.completed) byDate[r.date]++
-  })
-  let streak = 0
-  const cur = new Date()
-  cur.setHours(0, 0, 0, 0)
-  while (true) {
-    const ds = cur.toISOString().split('T')[0]
-    if (byDate[ds] && byDate[ds] > 0) {
-      streak++
-      cur.setDate(cur.getDate() - 1)
-    } else {
-      break
-    }
+export function getMudraRewards(totalHabits) {
+  if (totalHabits <= 0) return [];
+  if (totalHabits === 3) return [4, 3, 3];
+  if (totalHabits === 4) return [3, 2, 1, 4];
+  if (totalHabits === 5) return [1, 1, 2, 2, 4];
+  if (totalHabits === 6) return [1, 1, 1, 2, 2, 3];
+
+  // Generalized fallback for N
+  const arr = new Array(totalHabits).fill(1);
+  const sum = totalHabits;
+  const remaining = 10 - sum;
+  if (remaining >= 0) {
+    arr[totalHabits - 1] += remaining;
+  } else {
+    // If N > 10, just give 1 to each (capped at N)
+    return new Array(totalHabits).fill(1);
   }
-  return streak
+  return arr;
 }
 
-export function computeCoins(allProgress, habits) {
-  if (!allProgress.length || !habits.length) return 0
-  const byDate = {}
+/**
+ * Compute total Mudras from progress history
+ */
+export function computeMudras(allProgress, habits) {
+  if (!allProgress.length || !habits.length) return 0;
+  
+  // Group by date
+  const byDate = {};
   allProgress.forEach(r => {
-    if (!byDate[r.date]) byDate[r.date] = { hits: 0, weight: 0 }
-    const habit = habits.find(h => h.id === r.habit_id)
-    const w = habit ? habit.weight : 0
-    byDate[r.date].weight += w
-    if (r.completed) byDate[r.date].hits += w
-  })
+    if (!byDate[r.date]) byDate[r.date] = {};
+    byDate[r.date][r.habit_id] = r.completed;
+  });
 
-  let coins = 0
-  Object.values(byDate).forEach(({ hits, weight }) => {
-    // 100% completion (allowing small float differences) = 1 Vicissitude
-    if (weight > 0 && Math.abs(hits - weight) < 0.1) {
-      coins++
+  const rewards = getMudraRewards(habits.length);
+
+  let total = 0;
+  Object.keys(byDate).forEach(date => {
+    habits.forEach((h, idx) => {
+      if (byDate[date][h.id]) {
+        total += rewards[idx] || 0;
+      }
+    });
+  });
+  return total;
+}
+
+/**
+ * Compute Krama (Streak) from progress
+ * A day counts towards krama only if ALL habits completed OR Kavacha used.
+ */
+export function computeKramas(allProgress, habits, kavachasUsedDates = []) {
+  if (!allProgress.length || !habits.length) return 0;
+
+  const byDate = {};
+  allProgress.forEach(r => {
+    if (!byDate[r.date]) byDate[r.date] = 0;
+    if (r.completed) byDate[r.date]++;
+  });
+
+  const today_ = today();
+  let krama = 0;
+  let cur = new Date();
+  cur.setHours(0, 0, 0, 0);
+
+  // Walk backwards
+  while (true) {
+    const ds = cur.toISOString().split('T')[0];
+    const isFull = byDate[ds] === habits.length;
+    const isShielded = kavachasUsedDates.includes(ds);
+
+    if (isFull || isShielded) {
+      krama++;
+      cur.setDate(cur.getDate() - 1);
+    } else {
+      // If it's today and not done yet, don't break the krama yet
+      if (ds === today_) {
+        cur.setDate(cur.getDate() - 1);
+        continue;
+      }
+      break;
     }
-  })
-  return coins
+  }
+  return krama;
 }

@@ -11,7 +11,7 @@ import {
   subscribeToHabits,
   DEFAULT_SETTINGS,
 } from './db.js'
-import { computeStreak, computeCoins, daysBetween, today } from './utils/calculations.js'
+import { computeKramas, computeMudras, daysBetween, today } from './utils/calculations.js'
 import { applySettings } from './utils/applySettings.js'
 import { showLoginPage } from './pages/login.js'
 
@@ -23,6 +23,9 @@ import { initInsights } from './components/insights.js'
 import { initChart } from './components/chartViz.js'
 import { initSettings } from './components/settings.js'
 import { initHabitsModal } from './components/habitsModal.js'
+import { initShop } from './components/shop.js'
+import { initKramaCalendar } from './components/kramaCalendar.js'
+import { initGamificationCenter } from './components/gamificationCenter.js'
 
 const app = document.getElementById('app')
 
@@ -47,7 +50,7 @@ function hideLoadingScreen() {
 // ---- Teardown realtime ----
 function teardownRealtime() {
   realtimeChannels.forEach(ch => {
-    try { ch.unsubscribe() } catch (_) {}
+    try { supabase.removeChannel(ch) } catch (_) {}
   })
   realtimeChannels = []
 }
@@ -99,12 +102,14 @@ async function renderDashboard(userId) {
     setLoadingProgress(85)
 
     // Compute stats
-    const streak = computeStreak(allProgress, habits)
-    const coins = computeCoins(allProgress, habits)
+    const kramas = computeKramas(allProgress, habits, settings.kavachasUsedDates || [])
+    const mudras = computeMudras(allProgress, habits)
     const completedDates = new Set(allProgress.filter(r => r.completed).map(r => r.date))
     store.update({
-      streak,
-      coins,
+      kramas,
+      mudras,
+      kavachas: profile.kavachas || 0,
+      urjas: profile.urjas || 0,
       completedDaysCount: completedDates.size,
       totalDaysTracked: daysBetween(profile.start_date || settings.startDate, today()) + 1,
     })
@@ -122,6 +127,7 @@ async function renderDashboard(userId) {
             <div id="chart-mount"></div>
             <div id="insights-mount"></div>
             <div id="life-outcomes-mount"></div>
+            <div id="gamification-mount"></div>
             <div id="quote-mount"></div>
           </div>
         </main>
@@ -140,6 +146,9 @@ async function renderDashboard(userId) {
     initChart(document.getElementById('chart-mount'))
     initSettings()
     initHabitsModal()
+    initShop()
+    initKramaCalendar()
+    initGamificationCenter(document.getElementById('gamification-mount'))
 
     setLoadingProgress(100)
     setTimeout(hideLoadingScreen, 300)
@@ -176,10 +185,10 @@ function setupRealtime() {
       const all = await getAllProgress()
       store.set('allProgress', all)
       const habits = store.get('habits')
-      const streak = computeStreak(all, habits)
-      const coins = computeCoins(all, habits)
+      const kramas = computeKramas(all, habits, store.get('settings').kavachasUsedDates || [])
+      const mudras = computeMudras(all, habits)
       const completedDates = new Set(all.filter(r => r.completed).map(r => r.date))
-      store.update({ streak, coins, completedDaysCount: completedDates.size })
+      store.update({ kramas, mudras, completedDaysCount: completedDates.size })
     } catch (_) {}
   })
 
@@ -218,7 +227,7 @@ async function init() {
       appState = 'loading' // allow re-render
       store.update({
         profile: null, habits: [], todayState: {}, allProgress: [],
-        coins: 0, streak: 0, completedDaysCount: 0, selectedDate: today()
+        mudras: 0, kramas: 0, kavachas: 0, urjas: 0, completedDaysCount: 0, selectedDate: today()
       })
       renderLogin()
     }

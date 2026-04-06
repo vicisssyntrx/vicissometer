@@ -87,8 +87,10 @@ export const store = new Store({
   growthFactor: 1.0,
   completedDaysCount: 0,
   totalDaysTracked: 0,
-  coins: 0,
-  streak: 0,
+  mudras: 730,
+  kramas: 73,
+  kavachas: 0,
+  urjas: 0,
 
   // Settings (initialized from profile.settings in main.js)
   settings: { ...DEFAULT_SETTINGS },

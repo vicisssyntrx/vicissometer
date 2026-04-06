@@ -4,9 +4,9 @@ import {
   saveDailyProgress,
   clearDailyProgress,
   getAllProgress,
-  updateCoinsAndStreak,
+  updateMudrasAndKramas,
 } from '../db.js'
-import { computeTodayPct, computeStreak, computeCoins, today } from '../utils/calculations.js'
+import { computeTodayPct, computeKramas, computeMudras, today } from '../utils/calculations.js'
 import { showToast } from '../utils/toast.js'
 
 export function initDailyProgress(container) {
@@ -229,12 +229,12 @@ export function initDailyProgress(container) {
 
   async function recalcGlobalStats(all) {
     const habits = store.get('habits')
-    const streak = computeStreak(all, habits)
-    const coins = computeCoins(all, habits)
+    const kramas = computeKramas(all, habits, store.get('settings').kavachasUsedDates || [])
+    const mudras = computeMudras(all, habits)
     const completedDates = new Set(all.filter(r => r.completed).map(r => r.date))
-    store.update({ streak, coins, completedDaysCount: completedDates.size })
+    store.update({ kramas, mudras, completedDaysCount: completedDates.size })
     try {
-      await updateCoinsAndStreak(coins, streak)
+      await updateGameStats(mudras, kramas, store.get('kavachas') || 0, store.get('urjas') || 0)
     } catch (_) { /* non-critical */ }
   }
 
@@ -242,10 +242,16 @@ export function initDailyProgress(container) {
   render()
   loadDateProgress(store.get('selectedDate'))
 
-  // Re-render when habits change (e.g., after habits modal save)
+  // Re-render when habits change
   store.on('habits', () => {
-    if (!container.isConnected) return // skip if container is detached
+    if (!container.isConnected) return
     render()
     loadDateProgress(store.get('selectedDate'))
+  })
+
+  // IMPORTANT: Fix toggle bug by listening to todayState updates
+  store.on('todayState', () => {
+    if (!container.isConnected) return
+    render()
   })
 }

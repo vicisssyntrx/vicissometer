@@ -8,8 +8,26 @@ export function setCurrentUser(userId) {
 }
 
 function uid() {
-  if (!_uid) throw new Error('User not authenticated')
-  return _uid
+  if (_uid) return _uid
+  
+  // Check localStorage first (synchronous, fast lookup)
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key?.includes('-auth-token')) {
+      try {
+        const session = JSON.parse(localStorage.getItem(key))
+        if (session?.user?.id) {
+          _uid = session.user.id
+          return _uid
+        }
+      } catch (_) {}
+    }
+  }
+
+  // If we still don't have a UID, it might be a race condition during initialization.
+  // We'll return null instead of throwing, and let callers handle the empty state gracefully.
+  console.warn('uid() called before session loaded. Check setCurrentUser() call timing.')
+  return _uid 
 }
 
 // ---- Default data ----
@@ -23,18 +41,22 @@ export const DEFAULT_HABITS = [
 
 export const DEFAULT_SETTINGS = {
   fontScale:     1.0,
-  theme:         'auto',       // light | dark | auto
+  theme:         'auto',
   bgOpacity:     100,
   cardOpacity:   88,
-  cardBg:        '',           // Empty means follow theme default
-  primaryText:   '',           // Empty means follow theme default
-  secondaryText: '',           // Empty means follow theme default
+  cardBg:        '',
+  primaryText:   '',
+  secondaryText: '',
   accentColor:   '#8B5CF6',
   bgType:        'gradient',
-  bgValue:       '',           // Empty means follow theme default
+  bgValue:       '',
   startDate:     '2024-12-24',
   targetDate:    '2025-12-25',
   customQuotes:  '["The best time to plant a tree was 20 years ago. The second best time is now." - Chinese Proverb]\n["It does not matter how slowly you go as long as you do not stop." - Confucius]\n["Everything you can imagine is real." - Pablo Picasso]',
+  mudras:        0,
+  kramas:        0,
+  kavachas:      0,
+  urjas:         0
 }
 
 // ---- Profile ----
@@ -51,27 +73,26 @@ export async function getOrCreateProfile() {
   if (error) throw error
   if (data) return data
 
-  // First run — create profile + seed default habits
-  const newProfile = {
-    id: userId,
-    username: 'Viciss_Syntrx',
-    start_date: DEFAULT_SETTINGS.startDate,
-    target_date: DEFAULT_SETTINGS.targetDate,
-    coins:    0,
-    streak:   0,
-    settings: DEFAULT_SETTINGS,
-  }
-
-  const { data: created, error: e2 } = await supabase
+  // No profile found in DB for this authenticated user?
+  // This happens if the DB was nuked but the user is still logged in.
+  // Create a profile and trigger default habits creation.
+  console.log('Creating new profile for user:', userId)
+  const { data: newProfile, error: insertError } = await supabase
     .from('profiles')
-    .upsert(newProfile, { onConflict: 'id' })
+    .insert({
+      id: userId,
+      settings: DEFAULT_SETTINGS
+    })
     .select()
-    .single()
-
-  if (e2) throw e2
-
-  await seedDefaultHabits()
-  return created
+    .maybeSingle()
+  
+  if (insertError) {
+    console.warn('Failed to create profile:', insertError)
+    // Return a skeleton to keep UI alive
+    return { ...DEFAULT_SETTINGS, id: userId, settings: DEFAULT_SETTINGS }
+  }
+  
+  return newProfile || { ...DEFAULT_SETTINGS, id: userId, settings: DEFAULT_SETTINGS }
 }
 
 export async function updateProfile(updates) {
@@ -86,30 +107,129 @@ export async function updateSettings(settings) {
   return updateProfile({ settings })
 }
 
-export async function updateCoinsAndStreak(coins, streak) {
-  return updateProfile({ coins, streak })
+// ---- Stats ----
+
+export async function updateMudrasAndKramas(mudras, kramas) {
+  return updateProfile({ mudras, kramas })
 }
 
-// ---- Habits ----
+export async function updateGameStats(mudras, kramas, kavachas, urjas) {
+  return updateProfile({ mudras, kramas, kavachas, urjas })
+}
+
+// ---- Backfill ----
+
+export async function syncBackfillData(habits) {
+  const userId = uid();
+  const dates = [];
+  const addRange = (start, end) => {
+    let cur = new Date(start);
+    const stop = new Date(end);
+    while (cur <= stop) {
+      dates.push(cur.toISOString().split('T')[0]);
+      cur.setDate(cur.getDate() + 1);
+    }
+  };
+
+  addRange('2024-12-24', '2025-02-21'); // 60 days
+  addRange('2025-03-01', '2025-03-10'); // 10 days
+  dates.push('2025-03-15', '2025-03-16', '2025-03-25'); // 3 days
+
+  const rows = [];
+  dates.forEach(date => {
+    habits.forEach(h => {
+      rows.push({ user_id: userId, date, habit_id: h.id, completed: true });
+    });
+  });
+
+  const { error: ue } = await supabase.from('daily_progress').upsert(rows);
+  if (ue) throw ue;
+
+  // Update Kramas only, keep Mudras at 50
+  const mudras = 50; 
+  const kramas = 73;
+  await updateMudrasAndKramas(mudras, kramas);
+
+  // Initial Ledger entry for backfill
+  await addToLedger('KRAMA', 73, 'BACKFILL', 'Historic 73-day journey sync (Dec-Mar)');
+
+  return { mudras, kramas };
+}
+
+export async function addToLedger(assetType, amount, eventType, description) {
+  const { error } = await supabase
+    .from('gamification_ledger')
+    .insert({
+      user_id: uid(),
+      asset_type: assetType,
+      change_amount: amount,
+      event_type: eventType,
+      description: description
+    })
+  if (error) console.error('Ledger entry failed:', error)
+}
+
+
 
 export async function getHabits() {
+  const userId = uid()
+  if (!userId) return [] // Graceful exit if not ready
+
   const { data, error } = await supabase
     .from('habits')
     .select('*')
-    .eq('user_id', uid())
+    .eq('user_id', userId)
     .order('sort_order', { ascending: true })
-  if (error) throw error
+  
+  if (error) {
+    console.warn('Failed to fetch habits:', error.message)
+    return []
+  }
+  
+  // If user has no habits, create default ones (defensive fallback)
+  if (!data || data.length === 0) {
+    try {
+      console.log('No habits found for user. Creating default habits...')
+      const created = await createDefaultHabits()
+      return created
+    } catch (err) {
+      console.error('Failed to create default habits:', err)
+      return []
+    }
+  }
+  
   return data || []
 }
 
-export async function seedDefaultHabits() {
-  const existing = await getHabits()
-  if (existing.length > 0) return existing
+// Helper: Create default habits for a user
+export async function createDefaultHabits() {
+  const userId = uid()
+  if (!userId) throw new Error('User not authenticated')
 
-  const toInsert = DEFAULT_HABITS.map(h => ({ ...h, user_id: uid(), active: true }))
-  const { data, error } = await supabase.from('habits').insert(toInsert).select()
-  if (error) throw error
-  return data
+  const habitsToCreate = DEFAULT_HABITS.map((h, i) => ({
+    user_id: userId,
+    name: h.name,
+    icon: h.icon,
+    life_outcome: h.life_outcome,
+    life_outcome_icon: h.life_outcome_icon,
+    weight: h.weight,
+    sort_order: i,
+    active: true
+  }))
+
+  const { data, error } = await supabase
+    .from('habits')
+    .insert(habitsToCreate)
+    .select()
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    console.error('Error creating default habits:', error)
+    throw error
+  }
+
+  console.log('Default habits created successfully:', data)
+  return data || []
 }
 
 export async function addHabit(habit) {

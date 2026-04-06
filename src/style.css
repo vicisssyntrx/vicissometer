@@ -600,6 +600,123 @@ ul, ol { list-style: none; }
   min-width: 0%;
 }
 
+/* ---- 13.5 GAMIFICATION CENTER ---- */
+.gamification-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-5);
+  width: 100%;
+}
+
+.gamification-card {
+  height: 100%;
+}
+
+.gamification-card .glass-card-inner {
+  padding: var(--sp-5);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.gamification-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  width: 100%;
+}
+
+.gamification-info {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.gamification-icon-wrap {
+  font-size: 1.75rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.gamification-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.gamification-value {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.gamification-btn {
+  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 8px 14px;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+/* ---- UTILITIES (For Modals/Gamification) ---- */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.flex-1 { flex: 1; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-6 { margin-top: 1.5rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-6 { padding: 1.5rem; }
+.w-full { width: 100%; }
+.text-center { text-align: center; }
+.text-xl { font-size: 1.25rem; }
+.font-bold { font-weight: 700; }
+.uppercase { text-transform: uppercase; }
+.tracking-wider { letter-spacing: 0.05em; }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+
+/* Krama Modal specific tweaks */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.05);
+  cursor: default;
+}
+.calendar-day.completed { background: #22C55E; color: white; }
+.calendar-day.missed { background: #EF4444; color: white; }
+.calendar-day.today { border: 2px solid var(--accent); }
+.calendar-day.empty { background: transparent; }
+
 .progress-fill-accent { background: var(--accent); }
 
 /* Life outcome progress bar (smaller) */
@@ -1254,6 +1371,7 @@ ul, ol { list-style: none; }
   #chart-mount { grid-column: 2; grid-row: span 1; }
   #insights-mount { grid-column: 2; grid-row: span 1; }
   #life-outcomes-mount { grid-column: 1 / -1; }
+  #gamification-mount { grid-column: 1 / -1; }
   #quote-mount { grid-column: 1 / -1; }
 }
 
@@ -1829,3 +1947,154 @@ ul, ol { list-style: none; }
   height: 32px;
   border-radius: 8px;
 }
+
+/* --- Stat Cards (Kavacha/Urja) --- */
+.settings-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 4px 0 12px 0;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .settings-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Shop & Calendar Modals --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 450px;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 24px;
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.open .modal-content {
+  transform: scale(1);
+}
+
+.shop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--card-border);
+  transition: background 0.2s;
+}
+
+.shop-row:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.shop-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shop-item-icon {
+  font-size: 1.25rem;
+}
+
+.shop-price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Calendar Styles */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.calendar-day.empty { opacity: 0; pointer-events: none; }
+.calendar-day.missed { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+.calendar-day.completed { background: rgba(34, 197, 94, 0.15); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.3); }
+.calendar-day.shielded { background: rgba(59, 130, 246, 0.15); color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.3); }
+.calendar-day:hover:not(.empty) { background: rgba(255,255,255,0.1); }
+
