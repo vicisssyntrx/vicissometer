@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://mozwojaslnofaepemuqr.supabase.co'
-const SUPABASE_ANON_KEY = 'sb_publishable_6CBL_OlZIY6ecKYdbhsJjg_gfigFZvN'
+const SUPABASE_URL = 'https://semfpdnhpifcohqonzqz.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbWZwZG5ocGlmY29ocW9uenF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTUyNTUsImV4cCI6MjA5MTA3MTI1NX0.23q3rEFuEWCjxTicSaW8bXvUJZEI5VM2WmkWbmGTttA'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: true,
   },
   realtime: { params: { eventsPerSecond: 10 } }
 })
@@ -26,28 +26,12 @@ export async function getCurrentUser() {
   return user
 }
 
-export async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) throw error
-  return data
-}
-
 export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: window.location.origin
     }
-  })
-  if (error) throw error
-  return data
-}
-
-export async function signUp(email, password) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { emailRedirectTo: undefined }
   })
   if (error) throw error
   return data

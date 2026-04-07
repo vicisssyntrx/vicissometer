@@ -1,5 +1,5 @@
 import { store } from '../state.js'
-import { updateGameStats, addToLedger } from '../db.js'
+import { purchaseKavacha } from '../db.js'
 import { showToast } from '../utils/toast.js'
 
 export function initShop() {
@@ -51,18 +51,16 @@ export function initShop() {
         }
 
         if (confirm(`Buy ${amount} Kavacha(s) for ${price} Mudras?`)) {
-          const newMudras = currentMudras - price
-          const newKavachas = (store.get('kavachas') || 0) + amount
-          
-          store.update({ mudras: newMudras, kavachas: newKavachas })
-          await updateGameStats(newMudras, store.get('kramas'), newKavachas, store.get('urjas'))
-          
-          // Ledger entries
-          await addToLedger('MUDRA', -price, 'SHOP_PURCHASE', `Bought ${amount} Kavacha(s)`)
-          await addToLedger('KAVACHA', amount, 'SHOP_PURCHASE', `Added from shop`)
-          
-          showToast(`Successfully purchased ${amount} Kavacha(s)! ✨`, 'success')
-          render() // Update modal
+          try {
+            await purchaseKavacha(amount, price)
+            showToast(`Successfully purchased ${amount} Kavacha(s)! ✨`, 'success')
+            // Don't render() immediately if you want realtime to catch up, 
+            // but we can close it or let realtime update the header natively.
+            // Let's close modal since it was a success.
+            overlay.classList.remove('open')
+          } catch (err) {
+            showToast(err.message || 'Purchase failed', 'error')
+          }
         }
       }
     })

@@ -4,9 +4,9 @@ import {
   saveDailyProgress,
   clearDailyProgress,
   getAllProgress,
-  updateMudrasAndKramas,
+  createDefaultHabits,
 } from '../db.js'
-import { computeTodayPct, computeKramas, computeMudras, today } from '../utils/calculations.js'
+import { computeTodayPct, computeKramas, today } from '../utils/calculations.js'
 import { showToast } from '../utils/toast.js'
 
 export function initDailyProgress(container) {
@@ -72,7 +72,14 @@ export function initDailyProgress(container) {
 
           <div class="habits-list" id="habits-list">
             ${habits.length === 0
-              ? '<p style="color:var(--text-muted);font-size:0.82rem;text-align:center;padding:12px 0">No active habits. Add some!</p>'
+              ? `
+                <div style="text-align:center; padding: 24px 0;">
+                  <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:12px;">No active habits yet!</p>
+                  <button class="btn btn-secondary" id="import-defaults-btn" style="margin: 0 auto;">
+                    <span>⚡</span> Import Default Habits
+                  </button>
+                </div>
+                `
               : habits.map(renderHabitItem).join('')
             }
           </div>
@@ -113,14 +120,29 @@ export function initDailyProgress(container) {
     const openHabitsBtn = container.querySelector('#open-habits-btn')
     const resetBtn = container.querySelector('#reset-btn')
     const clearBtn = container.querySelector('#clear-btn')
+    const importDefaultsBtn = container.querySelector('#import-defaults-btn')
 
-    if (!datePicker || !habitsList || !saveBtn) return // detached or not rendered
+    if (!datePicker || !habitsList) return // detached or not rendered
 
     // Date picker
-    datePicker.addEventListener('change', async e => {
+    datePicker?.addEventListener('change', async e => {
       store.set('selectedDate', e.target.value)
       await loadDateProgress(e.target.value)
       render() // re-render to update UI for the new date
+    })
+
+    // Import Defaults
+    importDefaultsBtn?.addEventListener('click', async () => {
+      importDefaultsBtn.disabled = true
+      importDefaultsBtn.innerHTML = '<span>⏳</span> Importing...'
+      try {
+        const created = await createDefaultHabits()
+        store.set('habits', created)
+        showToast('Default habits imported!', 'success')
+      } catch (err) {
+        showToast('Import failed: ' + err.message, 'error')
+        importDefaultsBtn.disabled = false
+      }
     })
 
     // Toggle via checkbox
@@ -230,12 +252,10 @@ export function initDailyProgress(container) {
   async function recalcGlobalStats(all) {
     const habits = store.get('habits')
     const kramas = computeKramas(all, habits, store.get('settings').kavachasUsedDates || [])
-    const mudras = computeMudras(all, habits)
+    
     const completedDates = new Set(all.filter(r => r.completed).map(r => r.date))
-    store.update({ kramas, mudras, completedDaysCount: completedDates.size })
-    try {
-      await updateGameStats(mudras, kramas, store.get('kavachas') || 0, store.get('urjas') || 0)
-    } catch (_) { /* non-critical */ }
+    store.update({ kramas, completedDaysCount: completedDates.size })
+    // Mudras will be pulled in via Supabase realtime from the backend trigger!
   }
 
   // Initial render + data load
@@ -247,11 +267,5 @@ export function initDailyProgress(container) {
     if (!container.isConnected) return
     render()
     loadDateProgress(store.get('selectedDate'))
-  })
-
-  // IMPORTANT: Fix toggle bug by listening to todayState updates
-  store.on('todayState', () => {
-    if (!container.isConnected) return
-    render()
   })
 }

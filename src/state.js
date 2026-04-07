@@ -87,8 +87,8 @@ export const store = new Store({
   growthFactor: 1.0,
   completedDaysCount: 0,
   totalDaysTracked: 0,
-  mudras: 730,
-  kramas: 73,
+  mudras: 0,
+  kramas: 0,
   kavachas: 0,
   urjas: 0,
 

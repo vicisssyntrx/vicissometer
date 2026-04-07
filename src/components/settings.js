@@ -305,9 +305,11 @@ export function initSettings() {
       if (!confirm('Are you sure you want to sign out?')) return
       try {
         await signOut()
-        close()
       } catch (err) {
-        showToast('Sign out failed', 'error')
+        console.warn('Server signout failed, forcing local wipe:', err)
+      } finally {
+        localStorage.clear()
+        location.reload()
       }
     })
 

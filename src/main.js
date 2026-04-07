@@ -9,9 +9,10 @@ import {
   getAllProgress,
   subscribeToProgress,
   subscribeToHabits,
+  subscribeToProfile,
   DEFAULT_SETTINGS,
 } from './db.js'
-import { computeKramas, computeMudras, daysBetween, today } from './utils/calculations.js'
+import { computeKramas, daysBetween, today } from './utils/calculations.js'
 import { applySettings } from './utils/applySettings.js'
 import { showLoginPage } from './pages/login.js'
 
@@ -93,6 +94,8 @@ async function renderDashboard(userId) {
 
     // Load habits
     const habits = await getHabits()
+    console.warn(`[DIAGNOSTICS] getHabits returned:` , habits)
+    console.warn(`[DIAGNOSTICS] user is: ${userId}`)
     store.set('habits', habits)
     setLoadingProgress(70)
 
@@ -101,15 +104,20 @@ async function renderDashboard(userId) {
     store.set('allProgress', allProgress)
     setLoadingProgress(85)
 
-    // Compute stats
+    // Compute stats that we still rely on frontend for (like kramas for now)
     const kramas = computeKramas(allProgress, habits, settings.kavachasUsedDates || [])
-    const mudras = computeMudras(allProgress, habits)
+    
+    // We get strict truth from the DB profile now
+    const mudras = profile.mudras || 0
+    const kavachas = profile.kavachas || 0
+    const urjas = profile.urjas || 0
+    
     const completedDates = new Set(allProgress.filter(r => r.completed).map(r => r.date))
     store.update({
       kramas,
       mudras,
-      kavachas: profile.kavachas || 0,
-      urjas: profile.urjas || 0,
+      kavachas,
+      urjas,
       completedDaysCount: completedDates.size,
       totalDaysTracked: daysBetween(profile.start_date || settings.startDate, today()) + 1,
     })
@@ -185,10 +193,11 @@ function setupRealtime() {
       const all = await getAllProgress()
       store.set('allProgress', all)
       const habits = store.get('habits')
-      const kramas = computeKramas(all, habits, store.get('settings').kavachasUsedDates || [])
-      const mudras = computeMudras(all, habits)
+      const settings = store.get('settings')
+      const kramas = computeKramas(all, habits, settings.kavachasUsedDates || [])
+      
       const completedDates = new Set(all.filter(r => r.completed).map(r => r.date))
-      store.update({ kramas, mudras, completedDaysCount: completedDates.size })
+      store.update({ kramas, completedDaysCount: completedDates.size })
     } catch (_) {}
   })
 
@@ -199,32 +208,44 @@ function setupRealtime() {
     } catch (_) {}
   })
 
-  realtimeChannels = [ch1, ch2]
+  const ch3 = subscribeToProfile(async (payload) => {
+    // When profile changes (e.g. mudras update from trigger/RPC), update strictly
+    if (payload.new) {
+      const p = payload.new
+      store.update({ 
+        profile: p,
+        mudras: p.mudras,
+        kavachas: p.kavachas,
+        urjas: p.urjas 
+      })
+    }
+  })
+
+  realtimeChannels = [ch1, ch2, ch3]
 }
 
 // ---- App Bootstrap ----
 async function init() {
-  // Apply default theme immediately (so loading screen / login look correct)
   applySettings(DEFAULT_SETTINGS)
 
-  // Check for existing session first (don't rely on onAuthStateChange for initial load)
-  const session = await getSession()
-
-  if (session) {
-    // Already logged in — go straight to dashboard
-    await renderDashboard(session.user.id)
-  } else {
-    // Not logged in — show login
-    renderLogin()
+  try {
+    const session = await getSession()
+    if (session) {
+      await renderDashboard(session.user.id)
+    } else {
+      renderLogin()
+    }
+  } catch (err) {
+    console.error("Init Error:", err);
+    renderLogin(); // Fallback to login screen
   }
 
-  // Now listen for future auth changes (login/logout)
   onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session) {
-      appState = 'loading' // allow re-render
+      appState = 'loading'
       renderDashboard(session.user.id)
     } else if (event === 'SIGNED_OUT') {
-      appState = 'loading' // allow re-render
+      appState = 'loading'
       store.update({
         profile: null, habits: [], todayState: {}, allProgress: [],
         mudras: 0, kramas: 0, kavachas: 0, urjas: 0, completedDaysCount: 0, selectedDate: today()

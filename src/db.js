@@ -9,23 +9,19 @@ export function setCurrentUser(userId) {
 
 function uid() {
   if (_uid) return _uid
-  
-  // Check localStorage first (synchronous, fast lookup)
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key?.includes('-auth-token')) {
-      try {
-        const session = JSON.parse(localStorage.getItem(key))
-        if (session?.user?.id) {
-          _uid = session.user.id
-          return _uid
-        }
-      } catch (_) {}
-    }
-  }
 
-  // If we still don't have a UID, it might be a race condition during initialization.
-  // We'll return null instead of throwing, and let callers handle the empty state gracefully.
+  // Hard fallback for HMR (Hot Module Replacement) safety
+  try {
+    const raw = localStorage.getItem('sb-semfpdnhpifcohqonzqz-auth-token')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed?.user?.id) {
+        _uid = parsed.user.id
+        return _uid
+      }
+    }
+  } catch (e) {}
+
   console.warn('uid() called before session loaded. Check setCurrentUser() call timing.')
   return _uid 
 }
@@ -63,6 +59,10 @@ export const DEFAULT_SETTINGS = {
 
 export async function getOrCreateProfile() {
   const userId = uid()
+  if (!userId) {
+    console.warn('Attempted to get profile without a user ID')
+    return { ...DEFAULT_SETTINGS, id: 'temp', settings: DEFAULT_SETTINGS }
+  }
 
   const { data, error } = await supabase
     .from('profiles')
@@ -71,28 +71,25 @@ export async function getOrCreateProfile() {
     .maybeSingle()
 
   if (error) throw error
-  if (data) return data
+  
+  if (!data) {
+    console.warn('Profile missing from DB. Re-creating defensively...')
+    const { data: newProfile, error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: userId,
+        settings: DEFAULT_SETTINGS,
+        mudras: 50
+      })
+      .select()
+      .maybeSingle()
+    
+    // We no longer trigger default habits automatically here!
 
-  // No profile found in DB for this authenticated user?
-  // This happens if the DB was nuked but the user is still logged in.
-  // Create a profile and trigger default habits creation.
-  console.log('Creating new profile for user:', userId)
-  const { data: newProfile, error: insertError } = await supabase
-    .from('profiles')
-    .insert({
-      id: userId,
-      settings: DEFAULT_SETTINGS
-    })
-    .select()
-    .maybeSingle()
-  
-  if (insertError) {
-    console.warn('Failed to create profile:', insertError)
-    // Return a skeleton to keep UI alive
-    return { ...DEFAULT_SETTINGS, id: userId, settings: DEFAULT_SETTINGS }
+    return newProfile || { ...DEFAULT_SETTINGS, id: userId, mudras: 50, settings: DEFAULT_SETTINGS }
   }
-  
-  return newProfile || { ...DEFAULT_SETTINGS, id: userId, settings: DEFAULT_SETTINGS }
+
+  return data
 }
 
 export async function updateProfile(updates) {
@@ -115,6 +112,15 @@ export async function updateMudrasAndKramas(mudras, kramas) {
 
 export async function updateGameStats(mudras, kramas, kavachas, urjas) {
   return updateProfile({ mudras, kramas, kavachas, urjas })
+}
+
+export async function purchaseKavacha(amount, totalCost) {
+  const { data, error } = await supabase.rpc('purchase_kavacha', {
+    amount,
+    mudra_cost: totalCost
+  })
+  if (error) throw error
+  return data
 }
 
 // ---- Backfill ----
@@ -145,15 +151,15 @@ export async function syncBackfillData(habits) {
   const { error: ue } = await supabase.from('daily_progress').upsert(rows);
   if (ue) throw ue;
 
-  // Update Kramas only, keep Mudras at 50
-  const mudras = 50; 
+  // Let backend triggers handle Mudras! We just set Kramas manually if needed.
+  // Although Krama isn't trigger-based yet, Mudras are.
   const kramas = 73;
-  await updateMudrasAndKramas(mudras, kramas);
+  await updateProfile({ kramas });
 
   // Initial Ledger entry for backfill
   await addToLedger('KRAMA', 73, 'BACKFILL', 'Historic 73-day journey sync (Dec-Mar)');
 
-  return { mudras, kramas };
+  return { kramas };
 }
 
 export async function addToLedger(assetType, amount, eventType, description) {
@@ -185,19 +191,6 @@ export async function getHabits() {
     console.warn('Failed to fetch habits:', error.message)
     return []
   }
-  
-  // If user has no habits, create default ones (defensive fallback)
-  if (!data || data.length === 0) {
-    try {
-      console.log('No habits found for user. Creating default habits...')
-      const created = await createDefaultHabits()
-      return created
-    } catch (err) {
-      console.error('Failed to create default habits:', err)
-      return []
-    }
-  }
-  
   return data || []
 }
 
@@ -223,12 +216,7 @@ export async function createDefaultHabits() {
     .select()
     .order('sort_order', { ascending: true })
 
-  if (error) {
-    console.error('Error creating default habits:', error)
-    throw error
-  }
-
-  console.log('Default habits created successfully:', data)
+  if (error) throw error
   return data || []
 }
 
@@ -309,7 +297,7 @@ export async function clearDailyProgress(date) {
 // ---- Realtime ----
 
 export function subscribeToProgress(callback) {
-  const channel = supabase.channel('daily_progress_changes')
+  const channel = supabase.channel(`daily_progress_changes_${Date.now()}_${Math.random()}`)
   channel
     .on('postgres_changes', {
       event: '*',
@@ -322,13 +310,26 @@ export function subscribeToProgress(callback) {
 }
 
 export function subscribeToHabits(callback) {
-  const channel = supabase.channel('habits_changes')
+  const channel = supabase.channel(`habits_changes_${Date.now()}_${Math.random()}`)
   channel
     .on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'habits',
       filter: `user_id=eq.${uid()}`,
+    }, callback)
+    .subscribe()
+  return channel
+}
+
+export function subscribeToProfile(callback) {
+  const channel = supabase.channel(`profile_changes_${Date.now()}_${Math.random()}`)
+  channel
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'profiles',
+      filter: `id=eq.${uid()}`,
     }, callback)
     .subscribe()
   return channel
