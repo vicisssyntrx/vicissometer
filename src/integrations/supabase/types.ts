@@ -14,7 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_logs: {
+        Row: {
+          completed_count: number
+          completed_habits: Json
+          created_at: string
+          date: string
+          growth_after: number
+          growth_before: number
+          id: string
+          locked: boolean
+          shield_used: boolean
+          streak_after: number
+          total_count: number
+          user_id: string
+        }
+        Insert: {
+          completed_count?: number
+          completed_habits?: Json
+          created_at?: string
+          date: string
+          growth_after?: number
+          growth_before?: number
+          id?: string
+          locked?: boolean
+          shield_used?: boolean
+          streak_after?: number
+          total_count?: number
+          user_id: string
+        }
+        Update: {
+          completed_count?: number
+          completed_habits?: Json
+          created_at?: string
+          date?: string
+          growth_after?: number
+          growth_before?: number
+          id?: string
+          locked?: boolean
+          shield_used?: boolean
+          streak_after?: number
+          total_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habits: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+          outcome_emoji: string | null
+          outcome_name: string | null
+          reminder_time: string | null
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name: string
+          outcome_emoji?: string | null
+          outcome_name?: string | null
+          reminder_time?: string | null
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+          outcome_emoji?: string | null
+          outcome_name?: string | null
+          reminder_time?: string | null
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          coins: number
+          current_growth: number
+          id: string
+          power_ups: number
+          shields: number
+          streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coins?: number
+          current_growth?: number
+          id?: string
+          power_ups?: number
+          shields?: number
+          streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          current_growth?: number
+          id?: string
+          power_ups?: number
+          shields?: number
+          streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
