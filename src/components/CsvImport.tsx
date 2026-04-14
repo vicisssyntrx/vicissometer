@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 interface Props { onClose: () => void; }
 
@@ -18,52 +19,101 @@ export default function CsvImport({ onClose }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
 
-  const parseFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const lines = text.trim().split("\n").slice(1); // skip header
-      const rows: ParsedRow[] = [];
-      const errs: string[] = [];
-      const seen = new Set<string>();
+  const parseCSV = (text: string): { rows: ParsedRow[]; errs: string[] } => {
+    const lines = text.trim().split("\n").slice(1);
+    const rows: ParsedRow[] = [];
+    const errs: string[] = [];
+    const seen = new Set<string>();
 
-      for (let i = 0; i < lines.length; i++) {
-        const parts = lines[i].trim().split(",");
-        if (parts.length < 2) { errs.push(`Row ${i + 2}: invalid format`); continue; }
-        const date = parts[0].trim();
-        const val = parts[1].trim();
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errs.push(`Row ${i + 2}: invalid date "${date}"`); continue; }
-        if (val !== "0" && val !== "1") { errs.push(`Row ${i + 2}: value must be 0 or 1`); continue; }
-        if (seen.has(date)) { errs.push(`Row ${i + 2}: duplicate date "${date}"`); continue; }
-        if (new Date(date) > new Date()) { errs.push(`Row ${i + 2}: future date "${date}"`); continue; }
-        seen.add(date);
-        rows.push({ date, completed: val === "1" });
+    for (let i = 0; i < lines.length; i++) {
+      const parts = lines[i].trim().split(",");
+      if (parts.length < 2) { errs.push(`Row ${i + 2}: invalid format`); continue; }
+      const date = parts[0].trim();
+      const val = parts[1].trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errs.push(`Row ${i + 2}: invalid date "${date}"`); continue; }
+      if (val !== "0" && val !== "1") { errs.push(`Row ${i + 2}: value must be 0 or 1`); continue; }
+      if (seen.has(date)) { errs.push(`Row ${i + 2}: duplicate date "${date}"`); continue; }
+      if (new Date(date) > new Date()) { errs.push(`Row ${i + 2}: future date "${date}"`); continue; }
+      seen.add(date);
+      rows.push({ date, completed: val === "1" });
+    }
+    return { rows, errs };
+  };
+
+  const parseXLSX = (data: ArrayBuffer): { rows: ParsedRow[]; errs: string[] } => {
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
+    const rows: ParsedRow[] = [];
+    const errs: string[] = [];
+    const seen = new Set<string>();
+
+    for (let i = 1; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      if (!row || row.length < 2) { errs.push(`Row ${i + 1}: invalid format`); continue; }
+
+      let dateStr = "";
+      const rawDate = row[0];
+      if (typeof rawDate === "number") {
+        // Excel serial date number
+        const d = XLSX.SSF.parse_date_code(rawDate);
+        dateStr = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+      } else if (typeof rawDate === "string") {
+        dateStr = rawDate.trim();
       }
 
-      setPreview(rows);
-      setErrors(errs);
-    };
-    reader.readAsText(file);
+      const val = String(row[1]).trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) { errs.push(`Row ${i + 1}: invalid date "${rawDate}"`); continue; }
+      if (val !== "0" && val !== "1") { errs.push(`Row ${i + 1}: value must be 0 or 1`); continue; }
+      if (seen.has(dateStr)) { errs.push(`Row ${i + 1}: duplicate date "${dateStr}"`); continue; }
+      if (new Date(dateStr) > new Date()) { errs.push(`Row ${i + 1}: future date "${dateStr}"`); continue; }
+      seen.add(dateStr);
+      rows.push({ date: dateStr, completed: val === "1" });
+    }
+    return { rows, errs };
+  };
+
+  const parseFile = (file: File) => {
+    const isXlsx = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+    if (isXlsx) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target?.result as ArrayBuffer;
+        const { rows, errs } = parseXLSX(data);
+        rows.sort((a, b) => a.date.localeCompare(b.date));
+        setPreview(rows);
+        setErrors(errs);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const { rows, errs } = parseCSV(text);
+        rows.sort((a, b) => a.date.localeCompare(b.date));
+        setPreview(rows);
+        setErrors(errs);
+      };
+      reader.readAsText(file);
+    }
   };
 
   const doImport = async () => {
     if (!preview || !user) return;
     setImporting(true);
 
+    // No coins/shields from import — just growth + streak
     let growth = 1.0;
     let streak = 0;
-    let coins = 0;
 
     const logsToInsert = preview.map((row) => {
       const prevGrowth = growth;
       if (row.completed) {
         growth *= 1.01;
         streak += 1;
-        coins += 10;
       } else {
         streak = 0;
       }
-
       return {
         user_id: user.id,
         date: row.date,
@@ -85,11 +135,10 @@ export default function CsvImport({ onClose }: Props) {
       return;
     }
 
-    // Update stats
+    // Update stats — only growth and streak, no coins/shields
     await supabase.from("user_stats").update({
       current_growth: growth,
       streak,
-      coins,
     }).eq("user_id", user.id);
 
     qc.invalidateQueries({ queryKey: ["daily_logs"] });
@@ -108,18 +157,18 @@ export default function CsvImport({ onClose }: Props) {
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Upload a CSV with format: <code className="text-primary">date,completed</code> (1 = done, 0 = missed)
+          Upload a <code className="text-primary">CSV</code> or <code className="text-primary">XLSX</code> with format: <code className="text-primary">date, completed</code> (1 = done, 0 = missed). No coins or shields are awarded from imports.
         </p>
 
         <input
           ref={fileRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.xlsx,.xls"
           className="hidden"
           onChange={(e) => e.target.files?.[0] && parseFile(e.target.files[0])}
         />
         <Button onClick={() => fileRef.current?.click()} variant="secondary" className="w-full mb-4">
-          <Upload className="h-4 w-4 mr-2" /> Select CSV File
+          <Upload className="h-4 w-4 mr-2" /> Select CSV or XLSX File
         </Button>
 
         {errors.length > 0 && (
@@ -134,7 +183,7 @@ export default function CsvImport({ onClose }: Props) {
               <p className="text-foreground">📊 {preview.length} days total</p>
               <p className="text-muted-foreground">{preview.filter((r) => r.completed).length} completed, {preview.filter((r) => !r.completed).length} missed</p>
             </div>
-            <Button onClick={doImport} disabled={importing} className="w-full bg-primary text-primary-foreground">
+            <Button onClick={doImport} disabled={importing || preview.length === 0} className="w-full bg-primary text-primary-foreground">
               {importing ? "Importing..." : `Import ${preview.length} Days`}
             </Button>
           </>

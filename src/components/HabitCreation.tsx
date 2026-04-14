@@ -5,8 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
-const EMOJI_OPTIONS = ["📖", "🏋️", "🧘", "💻", "🎨", "🎵", "🏃", "💤", "🥗", "💧", "✍️", "🧠"];
-
 export default function HabitCreation() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -21,11 +19,13 @@ export default function HabitCreation() {
       return;
     }
     createHabit.mutate(
-      { name: name.trim(), emoji, outcome_name: outcomeName.trim() || undefined, outcome_emoji: outcomeEmoji || undefined },
+      { name: name.trim(), emoji: emoji || "✅", outcome_name: outcomeName.trim() || undefined, outcome_emoji: outcomeEmoji || undefined },
       {
         onSuccess: () => {
           setName("");
           setOutcomeName("");
+          setEmoji("✅");
+          setOutcomeEmoji("🧠");
           toast.success("Habit created!");
         },
       }
@@ -46,43 +46,35 @@ export default function HabitCreation() {
 
       {open && (
         <div className="px-4 pb-4 space-y-3">
-          <div className="flex gap-2">
-            <div className="flex flex-wrap gap-1.5">
-              {EMOJI_OPTIONS.map((e) => (
-                <button
-                  key={e}
-                  onClick={() => setEmoji(e)}
-                  className={`w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all ${emoji === e ? "bg-primary/30 ring-1 ring-primary" : "hover:bg-secondary"}`}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-2 items-center">
+            <Input
+              value={emoji}
+              onChange={(e) => setEmoji(e.target.value)}
+              placeholder="Emoji"
+              className="bg-secondary border-border w-16 text-center text-lg"
+              maxLength={4}
+            />
+            <Input
+              placeholder="Habit name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-secondary border-border flex-1"
+            />
           </div>
-          <Input
-            placeholder="Habit name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-secondary border-border"
-          />
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <Input
+              value={outcomeEmoji}
+              onChange={(e) => setOutcomeEmoji(e.target.value)}
+              placeholder="Emoji"
+              className="bg-secondary border-border w-16 text-center text-lg"
+              maxLength={4}
+            />
             <Input
               placeholder="Outcome (e.g. Thinker)"
               value={outcomeName}
               onChange={(e) => setOutcomeName(e.target.value)}
               className="bg-secondary border-border flex-1"
             />
-            <div className="flex gap-1">
-              {["🧠", "💪", "🎯", "❤️"].map((e) => (
-                <button
-                  key={e}
-                  onClick={() => setOutcomeEmoji(e)}
-                  className={`w-8 h-8 rounded-lg text-base flex items-center justify-center ${outcomeEmoji === e ? "bg-primary/30 ring-1 ring-primary" : "hover:bg-secondary"}`}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
           </div>
           <Button onClick={handleCreate} disabled={createHabit.isPending} className="w-full bg-primary text-primary-foreground">
             {createHabit.isPending ? "Creating..." : "Create Habit"}

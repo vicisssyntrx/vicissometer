@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import ParticleBackground from "@/components/ParticleBackground";
+import LightLeakBackground from "@/components/LightLeakBackground";
 import Navbar from "@/components/Navbar";
 import StatsBar from "@/components/StatsBar";
+import Greeting from "@/components/Greeting";
 import HabitCreation from "@/components/HabitCreation";
 import HabitList from "@/components/HabitList";
 import SaveProgressButton from "@/components/SaveProgressButton";
@@ -26,12 +28,18 @@ export default function Dashboard() {
 
   const locked = !!todayLog?.locked;
 
-  // If today is already saved, load that state
   useEffect(() => {
     if (todayLog?.completed_habits) {
       setCompletedIds(new Set(todayLog.completed_habits as string[]));
     }
   }, [todayLog]);
+
+  // Request notification permission on first load
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const toggleHabit = (id: string) => {
     setCompletedIds((prev) => {
@@ -52,15 +60,20 @@ export default function Dashboard() {
 
   return (
     <div className="relative min-h-screen bg-background">
+      <LightLeakBackground />
       <ParticleBackground />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
-        <StatsBar />
+        {/* Desktop stats below navbar */}
+        <div className="hidden md:block">
+          <StatsBar />
+        </div>
+        <Greeting />
 
-        <div className="flex-1 px-4 md:px-8 pb-8">
-          <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+        <div className="flex-1 px-3 md:px-8 pb-6">
+          <div className="grid md:grid-cols-2 gap-4 max-w-6xl mx-auto">
             {/* Left column */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <HabitCreation />
               <HabitList completedIds={completedIds} onToggle={toggleHabit} locked={locked} />
               <SaveProgressButton onSave={handleSave} locked={locked} disabled={!habits?.length} />
@@ -68,7 +81,7 @@ export default function Dashboard() {
             </div>
 
             {/* Right column */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <GrowthGraph />
               <Heatmap />
               <JourneyInsights />
