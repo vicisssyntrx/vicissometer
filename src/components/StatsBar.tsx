@@ -1,7 +1,7 @@
 import { useUserStats } from "@/hooks/useUserStats";
 import { useState } from "react";
 import ShieldShop from "./ShieldShop";
-import PowerUpOverlay from "./PowerUpOverlay";
+import StreakWindow from "./StreakWindow";
 
 const statItems = [
   { key: "coins", icon: "🪙", label: "Coins" },
@@ -13,32 +13,33 @@ const statItems = [
 export default function StatsBar() {
   const { data: stats } = useUserStats();
   const [showShields, setShowShields] = useState(false);
-  const [showPowerUps, setShowPowerUps] = useState(false);
+  const [showStreak, setShowStreak] = useState(false);
 
   const handleClick = (key: string) => {
     if (key === "shields") setShowShields(true);
-    if (key === "power_ups") setShowPowerUps(true);
+    if (key === "streak") setShowStreak(true);
+    if (key === "power_ups") setShowStreak(true);
   };
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-2 md:gap-3 px-4 md:px-8 py-3">
+      <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-4 py-1.5 overflow-x-auto">
         {statItems.map((s) => (
           <button
             key={s.key}
             onClick={() => handleClick(s.key)}
-            className="glass rounded-xl p-3 flex flex-col items-center gap-1 hover:bg-secondary/60 transition-colors cursor-pointer"
+            className="glass rounded-lg px-3 py-1.5 flex items-center gap-1.5 hover:bg-secondary/60 transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
           >
-            <span className="text-lg">{s.icon}</span>
-            <span className="text-xl md:text-2xl font-bold text-foreground">
+            <span className="text-sm">{s.icon}</span>
+            <span className="text-sm md:text-base font-bold text-foreground">
               {stats ? stats[s.key] : 0}
             </span>
-            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">{s.label}</span>
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider hidden md:inline">{s.label}</span>
           </button>
         ))}
       </div>
       {showShields && <ShieldShop onClose={() => setShowShields(false)} />}
-      {showPowerUps && <PowerUpOverlay onClose={() => setShowPowerUps(false)} />}
+      {showStreak && <StreakWindow onClose={() => setShowStreak(false)} />}
     </>
   );
 }
