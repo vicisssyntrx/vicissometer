@@ -18,14 +18,13 @@ export default function Heatmap() {
 
   const getColor = (dateStr: string) => {
     const entry = logMap.get(dateStr);
-    if (!entry) return "bg-secondary";
+    if (!entry) return "bg-secondary/50";
     if (entry.shielded) return "bg-primary/40 ring-1 ring-primary/60";
     if (entry.completed === entry.total) return "bg-primary";
     if (entry.completed > 0) return "bg-primary/50";
     return "bg-muted";
   };
 
-  // Group by week
   const weeks: Date[][] = [];
   let currentWeek: Date[] = [];
   for (const day of days) {
@@ -39,7 +38,7 @@ export default function Heatmap() {
 
   return (
     <div className="glass rounded-2xl p-4 md:p-6">
-      <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-4">Consistency</h3>
+      <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Heatmap</h3>
       <div className="overflow-x-auto">
         <div className="flex gap-[2px] min-w-[680px]">
           {weeks.map((week, wi) => (
@@ -58,8 +57,8 @@ export default function Heatmap() {
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-secondary" /> None</span>
+      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-secondary/50" /> None</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-primary/50" /> Partial</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-primary" /> Full</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-primary/40 ring-1 ring-primary/60" /> Shielded</span>
