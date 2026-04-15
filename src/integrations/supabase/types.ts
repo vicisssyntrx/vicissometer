@@ -160,7 +160,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      save_daily_progress: {
+        Args: {
+          p_coins: number
+          p_completed_count: number
+          p_completed_habits: Json
+          p_current_growth: number
+          p_date: string
+          p_growth_after: number
+          p_growth_before: number
+          p_power_ups: number
+          p_shield_used: boolean
+          p_shields: number
+          p_streak: number
+          p_streak_after: number
+          p_total_count: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

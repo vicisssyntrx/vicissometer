@@ -3,7 +3,7 @@ import { Save } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
-  onSave: () => Promise<any>;
+  onSave: () => Promise<boolean | undefined>;
   locked: boolean;
   disabled: boolean;
 }

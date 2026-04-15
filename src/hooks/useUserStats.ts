@@ -24,9 +24,18 @@ export function useUserStats() {
         .from("user_stats")
         .select("*")
         .eq("user_id", user!.id)
-        .single();
+        .maybeSingle();
+
       if (error) throw error;
-      return data as UserStats;
+      if (data) return data as UserStats;
+
+      const { data: created, error: createError } = await supabase
+        .from("user_stats")
+        .insert({ user_id: user!.id })
+        .select("*")
+        .single();
+      if (createError) throw createError;
+      return created as UserStats;
     },
     enabled: !!user,
   });

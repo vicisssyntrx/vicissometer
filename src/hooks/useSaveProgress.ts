@@ -4,6 +4,24 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Habit } from "./useHabits";
 import { UserStats } from "./useUserStats";
+import type { Json } from "@/integrations/supabase/types";
+
+interface SaveProgressResponse {
+  success?: boolean;
+  message?: string;
+}
+
+function parseSaveResponse(value: Json): SaveProgressResponse {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  const maybeSuccess = value.success;
+  const maybeMessage = value.message;
+  return {
+    success: typeof maybeSuccess === "boolean" ? maybeSuccess : undefined,
+    message: typeof maybeMessage === "string" ? maybeMessage : undefined,
+  };
+}
 
 export function useSaveProgress() {
   const { user } = useAuth();
@@ -62,36 +80,29 @@ export function useSaveProgress() {
       newStreak = 0;
     }
 
-    // Insert daily log
-    const { error: logErr } = await supabase.from("daily_logs").upsert({
-      user_id: user.id,
-      date: today,
-      completed_habits: Array.from(completedIds),
-      completed_count: completed,
-      total_count: total,
-      shield_used: shieldUsed,
-      streak_after: newStreak,
-      growth_before: prevGrowth,
-      growth_after: newGrowth,
-      locked: true,
-    }, { onConflict: "user_id,date" });
+    const { data, error: rpcError } = await supabase.rpc("save_daily_progress", {
+      p_date: today,
+      p_total_count: total,
+      p_completed_habits: Array.from(completedIds),
+      p_completed_count: completed,
+      p_shield_used: shieldUsed,
+      p_streak_after: newStreak,
+      p_growth_before: prevGrowth,
+      p_growth_after: newGrowth,
+      p_coins: newCoins,
+      p_streak: newStreak,
+      p_shields: newShields,
+      p_power_ups: newPowerUps,
+      p_current_growth: newGrowth,
+    });
 
-    if (logErr) {
-      toast.error("Failed to save: " + logErr.message);
+    if (rpcError) {
+      toast.error("Failed to save progress: " + rpcError.message);
       return;
     }
-
-    // Update stats
-    const { error: statErr } = await supabase.from("user_stats").update({
-      coins: newCoins,
-      streak: newStreak,
-      shields: newShields,
-      power_ups: newPowerUps,
-      current_growth: newGrowth,
-    }).eq("user_id", user.id);
-
-    if (statErr) {
-      toast.error("Failed to update stats: " + statErr.message);
+    const response = parseSaveResponse(data);
+    if (!response.success) {
+      toast.error(response.message || "Could not save progress");
       return;
     }
 
@@ -100,9 +111,9 @@ export function useSaveProgress() {
     qc.invalidateQueries({ queryKey: ["daily_log_today"] });
 
     if (completed === total) {
-      toast.success("🔥 Perfect day! +10 coins");
+      toast.success("Perfect day! +10 coins");
     } else if (shieldUsed) {
-      toast.info("🛡️ Shield protected your streak");
+      toast.info("Shield protected your streak");
     } else if (completed > 0) {
       toast.success("Progress saved!");
     } else {

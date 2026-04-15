@@ -31,19 +31,20 @@ export default function Auth() {
         const { error } = await signIn(email, password);
         if (error) throw error;
       }
-    } catch (err: any) {
-      toast.error(err.message || "Authentication failed");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Authentication failed";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center">
+    <div className="relative min-h-screen flex items-center justify-center px-3 py-6 sm:px-4">
       <ParticleBackground />
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="glass-strong rounded-2xl p-8">
-          <h1 className="text-3xl font-bold text-foreground mb-1 tracking-tight">Vicissometer</h1>
+      <div className="relative z-10 w-full max-w-md">
+        <div className="glass-strong rounded-2xl p-4 sm:p-6 md:p-8">
+          <h1 className="mb-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Vicissometer</h1>
           <p className="text-muted-foreground text-sm mb-8">
             {isSignUp ? "Create your account" : "Welcome back"}
           </p>

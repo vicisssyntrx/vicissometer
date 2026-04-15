@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import ShieldShop from "./ShieldShop";
 import PowerUpOverlay from "./PowerUpOverlay";
 import CsvImport from "./CsvImport";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 
 interface Props { onClose: () => void; }
 
@@ -63,7 +64,8 @@ export default function AccountCenter({ onClose }: Props) {
     if (!date || !user) return;
     setStartDate(date);
     const dateStr = format(date, "yyyy-MM-dd");
-    const { error } = await supabase.from("user_stats").update({ start_date: dateStr } as any).eq("user_id", user.id);
+    const update: TablesUpdate<"user_stats"> = { start_date: dateStr };
+    const { error } = await supabase.from("user_stats").update(update).eq("user_id", user.id);
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["user_stats"] });
     toast.success(`Program starts ${format(date, "MMM d, yyyy")} → ends ${format(new Date(date.getFullYear() + 1, date.getMonth(), date.getDate()), "MMM d, yyyy")}`);
@@ -90,11 +92,26 @@ export default function AccountCenter({ onClose }: Props) {
     const confirmed = window.confirm("This will delete ALL your data (habits, history, stats) and start fresh. Are you sure?");
     if (!confirmed) return;
     setResetting(true);
-    await supabase.from("daily_logs").delete().eq("user_id", user.id);
-    await supabase.from("habits").delete().eq("user_id", user.id);
-    await supabase.from("user_stats").update({
+    const { error: logDeleteError } = await supabase.from("daily_logs").delete().eq("user_id", user.id);
+    if (logDeleteError) {
+      toast.error(logDeleteError.message);
+      setResetting(false);
+      return;
+    }
+    const { error: habitDeleteError } = await supabase.from("habits").delete().eq("user_id", user.id);
+    if (habitDeleteError) {
+      toast.error(habitDeleteError.message);
+      setResetting(false);
+      return;
+    }
+    const { error: statResetError } = await supabase.from("user_stats").update({
       coins: 0, streak: 0, shields: 0, power_ups: 0, current_growth: 1.0,
     }).eq("user_id", user.id);
+    if (statResetError) {
+      toast.error(statResetError.message);
+      setResetting(false);
+      return;
+    }
     qc.invalidateQueries();
     toast.success("All data reset to defaults!");
     setResetting(false);
