@@ -66,10 +66,29 @@ export function useTodayLog() {
   });
 }
 
+export function useLogForDate(date: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["daily_log_date", user?.id, date],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_logs")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("date", date)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? normalizeLog(data) : null;
+    },
+    enabled: !!user && !!date,
+  });
+}
+
 export function useRefreshLogs() {
   const qc = useQueryClient();
   return () => {
     qc.invalidateQueries({ queryKey: ["daily_logs"] });
     qc.invalidateQueries({ queryKey: ["daily_log_today"] });
+    qc.invalidateQueries({ queryKey: ["daily_log_date"] });
   };
 }

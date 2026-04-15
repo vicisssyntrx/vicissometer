@@ -4,10 +4,10 @@ import ShieldShop from "./ShieldShop";
 import StreakWindow from "./StreakWindow";
 
 const statItems = [
-  { key: "coins", icon: "🪙", label: "Coins" },
-  { key: "streak", icon: "🔥", label: "Streak" },
-  { key: "shields", icon: "🛡️", label: "Shields" },
-  { key: "power_ups", icon: "⚡", label: "Power-ups" },
+  { key: "coins", icon: "🪙" },
+  { key: "streak", icon: "🔥" },
+  { key: "shields", icon: "🛡️" },
+  { key: "power_ups", icon: "⚡" },
 ] as const;
 
 export default function StatsBar() {
@@ -23,18 +23,17 @@ export default function StatsBar() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="flex items-center justify-between gap-1.5 px-1">
         {statItems.map((s) => (
           <button
             key={s.key}
             onClick={() => handleClick(s.key)}
-            className="glass rounded-xl px-3 py-2.5 flex items-center gap-2 hover:bg-secondary/60 transition-colors cursor-pointer min-h-14"
+            className="flex-1 glass rounded-lg flex items-center justify-center gap-1.5 py-1.5 hover:bg-secondary/60 transition-colors cursor-pointer"
           >
-            <span className="text-base">{s.icon}</span>
-            <div className="text-left">
-              <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">{s.label}</p>
-              <p className="text-base sm:text-lg font-bold text-foreground leading-tight">{stats ? stats[s.key] : 0}</p>
-            </div>
+            <span className="text-sm leading-none">{s.icon}</span>
+            <span className="text-sm font-bold text-foreground leading-none">
+              {stats ? stats[s.key] : 0}
+            </span>
           </button>
         ))}
       </div>
