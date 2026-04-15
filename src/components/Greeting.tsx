@@ -35,9 +35,9 @@ export default function Greeting() {
   }
 
   return (
-    <div className="px-3 md:px-8 pt-2 pb-1">
-      <h2 className="text-base md:text-xl font-bold text-foreground">{greeting}</h2>
-      <p className="text-[11px] md:text-xs text-muted-foreground">{message}</p>
+    <div className="px-3 sm:px-4 md:px-8 pt-3 pb-2">
+      <h2 className="text-xl md:text-2xl font-bold text-foreground">{greeting}</h2>
+      <p className="text-sm md:text-base text-muted-foreground">{message}</p>
     </div>
   );
 }
