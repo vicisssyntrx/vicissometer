@@ -40,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         data: { display_name: displayName },
-        emailRedirectTo: window.location.origin,
       },
     });
     return { error };

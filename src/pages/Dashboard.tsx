@@ -88,13 +88,12 @@ export default function Dashboard() {
       <ParticleBackground />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
-        {/* Desktop stats below navbar */}
-        <div className="hidden md:block">
+        <div className="px-2 sm:px-4 md:px-8 pt-2">
           <StatsBar />
         </div>
         <Greeting />
 
-        <div className="flex-1 px-2 sm:px-4 md:px-8 pb-3 md:pb-4">
+        <div className="flex-1 px-2 sm:px-4 md:px-8 pb-4 md:pb-6">
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
             {/* Left column */}
             <div className="space-y-3 md:space-y-2">

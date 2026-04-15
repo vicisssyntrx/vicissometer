@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import NotificationPanel from "./NotificationPanel";
 import AccountCenter from "./AccountCenter";
-import StatsBar from "./StatsBar";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -14,21 +13,17 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="relative z-20 flex items-center justify-between px-2 md:px-8 py-1.5 md:py-2 glass-strong">
-        {/* Desktop: show title, Mobile: show stats inline */}
-        <h1 className="hidden md:block text-xl font-bold tracking-tight text-foreground">
+      <nav className="relative z-20 flex items-center justify-between px-3 sm:px-4 md:px-8 py-2 md:py-2.5 glass-strong">
+        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
           Vicissometer
         </h1>
-        <div className="md:hidden flex-1 min-w-0 overflow-x-auto">
-          <StatsBar />
-        </div>
-        <div className="flex items-center gap-1 ml-1.5 flex-shrink-0">
-          <Button variant="ghost" size="icon" onClick={() => setShowNotif(!showNotif)} className="relative h-7 w-7 md:h-8 md:w-8">
-            <Bell className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+        <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => setShowNotif(!showNotif)} className="relative h-9 w-9 md:h-10 md:w-10">
+            <Bell className="h-4.5 w-4.5 md:h-5 md:w-5 text-muted-foreground" />
           </Button>
           <button
             onClick={() => setShowAccount(true)}
-            className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-semibold text-[10px] md:text-xs hover:bg-primary/30 transition-colors"
+            className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-semibold text-sm hover:bg-primary/30 transition-colors"
           >
             {initial}
           </button>

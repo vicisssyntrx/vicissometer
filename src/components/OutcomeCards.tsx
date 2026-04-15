@@ -33,24 +33,24 @@ export default function OutcomeCards() {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-xs uppercase tracking-wider text-muted-foreground px-1">Becoming</h3>
-      <div className="grid gap-1.5">
+      <h3 className="text-sm uppercase tracking-wider text-muted-foreground px-1">Becoming</h3>
+      <div className="grid gap-2">
         {Array.from(outcomes.entries()).map(([name, o]) => {
           const ratio = o.totalCount > 0 ? Math.round((o.completedCount / o.totalCount) * 100) : 0;
           return (
-            <div key={name} className="glass rounded-xl p-2.5 md:p-3">
-              <div className="flex items-center gap-2.5 mb-1.5">
-                <span className="text-xl">{o.emoji}</span>
+            <div key={name} className="glass rounded-xl p-3 md:p-3.5">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">{o.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground text-sm">{name}</p>
-                  <p className="text-[10px] text-muted-foreground">{o.habits.length} habit{o.habits.length > 1 ? "s" : ""}</p>
+                  <p className="font-medium text-foreground text-base">{name}</p>
+                  <p className="text-xs text-muted-foreground">{o.habits.length} habit{o.habits.length > 1 ? "s" : ""}</p>
                 </div>
-                <span className="text-base font-bold text-primary">{ratio}%</span>
+                <span className="text-lg font-bold text-primary">{ratio}%</span>
               </div>
-              <div className="w-full h-1 rounded-full bg-secondary overflow-hidden">
+              <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
                 <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${ratio}%` }} />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5 italic">You are becoming a {name}</p>
+              <p className="text-xs text-muted-foreground mt-2 italic">You are becoming a {name}</p>
             </div>
           );
         })}

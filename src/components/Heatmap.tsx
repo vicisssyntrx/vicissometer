@@ -44,27 +44,27 @@ export default function Heatmap() {
   if (currentWeek.length) weeks.push(currentWeek);
 
   return (
-    <div className="glass rounded-2xl p-2 md:p-5">
-      <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Heatmap</h3>
+    <div className="glass rounded-2xl p-3 md:p-5">
+      <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-2">Heatmap</h3>
       <div className="overflow-x-auto">
-        <div className="flex gap-[2px] min-w-[680px]">
+        <div className="flex gap-[3px] min-w-[680px]">
           {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-[2px]">
+            <div key={wi} className="flex flex-col gap-[3px]">
               {week.map((day) => {
                 const dateStr = format(day, "yyyy-MM-dd");
                 return (
-                  <div key={dateStr} className={`w-2.5 h-2.5 rounded-[2px] ${getColor(dateStr)} transition-colors`} title={format(day, "MMM d")} />
+                  <div key={dateStr} className={`w-3 h-3 rounded-[3px] ${getColor(dateStr)} transition-colors`} title={format(day, "MMM d")} />
                 );
               })}
             </div>
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-2 mt-1.5 text-[9px] text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-secondary/50" /> None</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-primary/50" /> Partial</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-primary" /> Full</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-primary/40 ring-1 ring-primary/60" /> Shielded</span>
+      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground flex-wrap">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[3px] bg-secondary/50" /> None</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[3px] bg-primary/50" /> Partial</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[3px] bg-primary" /> Full</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[3px] bg-primary/40 ring-1 ring-primary/60" /> Shielded</span>
       </div>
     </div>
   );
