@@ -29,7 +29,9 @@ export default function HabitList({ completedIds, onToggle, viewOnly = false }: 
         return (
           <div
             key={h.id}
-            className={`glass rounded-xl p-3.5 flex items-center gap-3 transition-all ${checked ? "border-primary/40" : ""}`}
+            className={`glass rounded-xl p-3.5 flex items-center gap-3 transition-all ${
+              checked ? "border border-primary/30 bg-primary/5" : ""
+            }`}
           >
             <span className="text-2xl">{h.emoji}</span>
             <div className="flex-1 min-w-0">
