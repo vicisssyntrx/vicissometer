@@ -1,7 +1,7 @@
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { format, parseISO, differenceInDays } from "date-fns";
+import { format, parseISO, differenceInDays, isValid } from "date-fns";
 
 export default function GrowthGraph() {
   const { data: logs } = useDailyLogs();
@@ -18,21 +18,42 @@ export default function GrowthGraph() {
     );
   }
 
-  // Use program start_date if available
-  const programStart = stats?.start_date ? parseISO(stats.start_date) : parseISO(logs[0].date);
+  const firstValidLog = logs.find((log) => isValid(parseISO(log.date)));
+  const statsStart = stats?.start_date ? parseISO(stats.start_date) : null;
+  const programStart =
+    statsStart && isValid(statsStart)
+      ? statsStart
+      : firstValidLog
+        ? parseISO(firstValidLog.date)
+        : new Date();
 
-  const data = logs.map((l) => {
-    const dayNum = differenceInDays(parseISO(l.date), programStart);
-    const idealGrowth = Math.pow(1.01, Math.max(0, dayNum));
-    return {
-      date: format(parseISO(l.date), "MMM d"),
-      actual: Number(l.growth_after.toFixed(4)),
-      ideal: Number(idealGrowth.toFixed(4)),
-    };
-  });
+  const data = logs
+    .map((l) => {
+      const parsedDate = parseISO(l.date);
+      if (!isValid(parsedDate)) return null;
+      const dayNum = differenceInDays(parsedDate, programStart);
+      const idealGrowth = Math.pow(1.01, Math.max(0, dayNum));
+      return {
+        date: format(parsedDate, "MMM d"),
+        actual: Number(l.growth_after.toFixed(4)),
+        ideal: Number(idealGrowth.toFixed(4)),
+      };
+    })
+    .filter((item): item is { date: string; actual: number; ideal: number } => !!item);
+
+  if (!data.length) {
+    return (
+      <div className="glass rounded-2xl p-4">
+        <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Growth</h3>
+        <div className="h-36 flex items-center justify-center text-muted-foreground text-sm">
+          Invalid growth dates detected in history
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="glass rounded-2xl p-3 md:p-5">
+    <div className="glass rounded-2xl p-2 md:p-5">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs uppercase tracking-wider text-muted-foreground">Growth</h3>
         <div className="flex items-center gap-3 text-[9px] text-muted-foreground">

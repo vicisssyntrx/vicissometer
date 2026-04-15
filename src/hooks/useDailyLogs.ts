@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface DailyLog {
   id: string;
@@ -17,6 +18,18 @@ export interface DailyLog {
   created_at: string;
 }
 
+function normalizeCompletedHabits(value: Json): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function normalizeLog(log: Omit<DailyLog, "completed_habits"> & { completed_habits: Json }): DailyLog {
+  return {
+    ...log,
+    completed_habits: normalizeCompletedHabits(log.completed_habits),
+  };
+}
+
 export function useDailyLogs() {
   const { user } = useAuth();
   return useQuery({
@@ -25,9 +38,10 @@ export function useDailyLogs() {
       const { data, error } = await supabase
         .from("daily_logs")
         .select("*")
+        .eq("user_id", user!.id)
         .order("date", { ascending: true });
       if (error) throw error;
-      return data as DailyLog[];
+      return data.map((row) => normalizeLog(row));
     },
     enabled: !!user,
   });
@@ -42,10 +56,11 @@ export function useTodayLog() {
       const { data, error } = await supabase
         .from("daily_logs")
         .select("*")
+        .eq("user_id", user!.id)
         .eq("date", today)
         .maybeSingle();
       if (error) throw error;
-      return data as DailyLog | null;
+      return data ? normalizeLog(data) : null;
     },
     enabled: !!user,
   });

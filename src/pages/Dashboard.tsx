@@ -17,12 +17,13 @@ import { useHabits } from "@/hooks/useHabits";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTodayLog } from "@/hooks/useDailyLogs";
 import { useSaveProgress } from "@/hooks/useSaveProgress";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const { data: habits } = useHabits();
-  const { data: stats } = useUserStats();
-  const { data: todayLog } = useTodayLog();
+  const { data: stats, isLoading: statsLoading, error: statsError } = useUserStats();
+  const { data: todayLog, isLoading: todayLogLoading } = useTodayLog();
   const { saveProgress } = useSaveProgress();
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
@@ -30,7 +31,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (todayLog?.completed_habits) {
-      setCompletedIds(new Set(todayLog.completed_habits as string[]));
+      setCompletedIds(new Set(todayLog.completed_habits));
     }
   }, [todayLog]);
 
@@ -67,7 +68,14 @@ export default function Dashboard() {
   };
 
   const handleSave = async () => {
-    if (!habits || !stats) return;
+    if (todayLogLoading) {
+      toast.info("Please wait, checking today's status...");
+      return;
+    }
+    if (!habits || !stats) {
+      toast.error("Stats are still loading. Try again.");
+      return;
+    }
     return saveProgress(habits, completedIds, stats);
   };
 
@@ -86,18 +94,22 @@ export default function Dashboard() {
         </div>
         <Greeting />
 
-        <div className="flex-1 px-2 md:px-8 pb-4">
-          <div className="grid md:grid-cols-2 gap-3 max-w-6xl mx-auto">
+        <div className="flex-1 px-2 sm:px-4 md:px-8 pb-3 md:pb-4">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
             {/* Left column */}
-            <div className="space-y-2">
+            <div className="space-y-3 md:space-y-2">
               <HabitCreation />
               <HabitList completedIds={completedIds} onToggle={toggleHabit} locked={locked} />
-              <SaveProgressButton onSave={handleSave} locked={locked} disabled={!habits?.length} />
+              <SaveProgressButton
+                onSave={handleSave}
+                locked={locked}
+                disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError}
+              />
               <OutcomeCards />
             </div>
 
             {/* Right column */}
-            <div className="space-y-2">
+            <div className="space-y-3 md:space-y-2">
               <GrowthGraph />
               <Heatmap />
               <JourneyInsights />

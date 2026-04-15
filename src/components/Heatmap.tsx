@@ -1,16 +1,20 @@
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
-import { format, eachDayOfInterval, parseISO, getDay, addYears } from "date-fns";
+import { format, eachDayOfInterval, parseISO, getDay, addYears, isValid, subDays } from "date-fns";
 
 export default function Heatmap() {
   const { data: logs } = useDailyLogs();
   const { data: stats } = useUserStats();
 
-  // Use program start_date for the heatmap range
-  const start = stats?.start_date ? parseISO(stats.start_date) : new Date(new Date().getFullYear(), 0, 1);
-  const end = stats?.start_date ? addYears(parseISO(stats.start_date), 1) : new Date(new Date().getFullYear(), 11, 31);
-  
-  const days = eachDayOfInterval({ start, end: end > new Date() ? new Date() : end });
+  const now = new Date();
+  const parsedStart = stats?.start_date ? parseISO(stats.start_date) : null;
+  const fallbackStart = subDays(now, 180);
+  const safeStart = parsedStart && isValid(parsedStart) ? parsedStart : fallbackStart;
+  const projectedEnd = addYears(safeStart, 1);
+  const safeEnd = projectedEnd > now ? now : projectedEnd;
+  const clampedStart = safeStart > safeEnd ? subDays(safeEnd, 30) : safeStart;
+
+  const days = eachDayOfInterval({ start: clampedStart, end: safeEnd });
 
   const logMap = new Map<string, { completed: number; total: number; shielded: boolean }>();
   if (logs) {
@@ -40,7 +44,7 @@ export default function Heatmap() {
   if (currentWeek.length) weeks.push(currentWeek);
 
   return (
-    <div className="glass rounded-2xl p-3 md:p-5">
+    <div className="glass rounded-2xl p-2 md:p-5">
       <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Heatmap</h3>
       <div className="overflow-x-auto">
         <div className="flex gap-[2px] min-w-[680px]">

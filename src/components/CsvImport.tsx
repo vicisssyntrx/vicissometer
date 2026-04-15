@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 interface Props { onClose: () => void; }
 
 interface ParsedRow { date: string; completed: boolean; }
+type XlsxRow = (string | number | null | undefined)[];
 
 export default function CsvImport({ onClose }: Props) {
   const { user } = useAuth();
@@ -43,7 +44,7 @@ export default function CsvImport({ onClose }: Props) {
   const parseXLSX = (data: ArrayBuffer): { rows: ParsedRow[]; errs: string[] } => {
     const workbook = XLSX.read(data, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 });
+    const jsonData = XLSX.utils.sheet_to_json<XlsxRow>(sheet, { header: 1 });
     const rows: ParsedRow[] = [];
     const errs: string[] = [];
     const seen = new Set<string>();

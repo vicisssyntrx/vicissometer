@@ -23,6 +23,7 @@ export function useHabits() {
       const { data, error } = await supabase
         .from("habits")
         .select("*")
+        .eq("user_id", user!.id)
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return data as Habit[];
