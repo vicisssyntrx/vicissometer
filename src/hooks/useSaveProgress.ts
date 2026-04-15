@@ -30,10 +30,11 @@ export function useSaveProgress() {
   const saveProgress = async (
     habits: Habit[],
     completedIds: Set<string>,
-    stats: UserStats
+    stats: UserStats,
+    dateOverride?: string
   ) => {
     if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
+    const today = dateOverride ?? new Date().toISOString().split("T")[0];
     const total = habits.length;
     const completed = completedIds.size;
 

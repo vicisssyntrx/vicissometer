@@ -16,6 +16,7 @@ import PowerUpOverlay from "./PowerUpOverlay";
 import CsvImport from "./CsvImport";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { getInstallLabel, isMobileDevice, isRunningStandalone } from "@/lib/pwa";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Props { onClose: () => void; }
 
@@ -27,6 +28,7 @@ export default function AccountCenter({ onClose }: Props) {
   const [showImport, setShowImport] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || "");
+  const [avatarUrl, setAvatarUrl] = useState((user?.user_metadata as { avatar_url?: string } | undefined)?.avatar_url || "");
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     typeof window !== "undefined" && "Notification" in window ? Notification.permission === "granted" : false
   );
@@ -46,6 +48,21 @@ export default function AccountCenter({ onClose }: Props) {
     enabled: !!user,
   });
 
+  // Fetch profile row (display_name/avatar_url)
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("user_id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const currentStartDate = startDate || (stats?.start_date ? new Date(stats.start_date + "T00:00:00") : undefined);
 
@@ -55,10 +72,16 @@ export default function AccountCenter({ onClose }: Props) {
   };
 
   const handleUpdateProfile = async () => {
-    const { error } = await supabase.auth.updateUser({ data: { display_name: displayName } });
+    const nextAvatar = avatarUrl.trim() || null;
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: displayName, avatar_url: nextAvatar },
+    });
     if (error) { toast.error(error.message); return; }
     if (user) {
-      await supabase.from("profiles").update({ display_name: displayName }).eq("user_id", user.id);
+      await supabase
+        .from("profiles")
+        .update({ display_name: displayName, avatar_url: nextAvatar })
+        .eq("user_id", user.id);
     }
     qc.invalidateQueries({ queryKey: ["profile"] });
     toast.success("Profile updated!");
@@ -154,8 +177,16 @@ export default function AccountCenter({ onClose }: Props) {
   if (showPowerUps) return <PowerUpOverlay onClose={() => setShowPowerUps(false)} />;
   if (showImport) return <CsvImport onClose={() => setShowImport(false)} />;
 
-  const initial = user?.user_metadata?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "?";
-  const currentDisplayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
+  const currentDisplayName =
+    profile?.display_name ||
+    user?.user_metadata?.display_name ||
+    user?.email?.split("@")[0] ||
+    "User";
+  const currentAvatar =
+    profile?.avatar_url ||
+    (user?.user_metadata as { avatar_url?: string } | undefined)?.avatar_url ||
+    null;
+  const initial = currentDisplayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "?";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-3 sm:p-4">
@@ -167,13 +198,20 @@ export default function AccountCenter({ onClose }: Props) {
 
         {/* Profile */}
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary text-xl font-bold">
-            {initial}
-          </div>
+          <Avatar className="h-12 w-12 border border-primary/40 bg-primary/20">
+            {currentAvatar ? <AvatarImage src={currentAvatar} alt="Profile" /> : null}
+            <AvatarFallback className="text-primary text-xl font-bold">{initial}</AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
             {editingProfile ? (
               <div className="space-y-2">
                 <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-secondary border-border h-10 text-base" placeholder="Display Name" />
+                <Input
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  className="bg-secondary border-border h-10 text-base"
+                  placeholder="Avatar image URL (optional)"
+                />
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleUpdateProfile} className="bg-primary text-primary-foreground text-sm h-8">Save</Button>
                   <Button size="sm" variant="ghost" onClick={() => setEditingProfile(false)} className="text-sm h-8">Cancel</Button>
@@ -183,7 +221,14 @@ export default function AccountCenter({ onClose }: Props) {
               <>
                 <p className="font-semibold text-foreground text-base truncate">{currentDisplayName}</p>
                 <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
-                <button onClick={() => { setDisplayName(currentDisplayName); setEditingProfile(true); }} className="text-sm text-primary hover:underline mt-0.5">
+                <button
+                  onClick={() => {
+                    setDisplayName(currentDisplayName);
+                    setAvatarUrl(currentAvatar || "");
+                    setEditingProfile(true);
+                  }}
+                  className="text-sm text-primary hover:underline mt-0.5"
+                >
                   <User className="h-3 w-3 inline mr-1" />Edit Profile
                 </button>
               </>

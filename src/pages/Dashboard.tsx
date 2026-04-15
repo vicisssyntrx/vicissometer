@@ -9,10 +9,10 @@ import Greeting from "@/components/Greeting";
 import HabitList from "@/components/HabitList";
 import OutcomeCards from "@/components/OutcomeCards";
 import GrowthGraph from "@/components/GrowthGraph";
-import Heatmap from "@/components/Heatmap";
 import JourneyInsights from "@/components/JourneyInsights";
 import DateSelector from "@/components/DateSelector";
 import BottomActionBar from "@/components/BottomActionBar";
+import MobileBoostCards from "@/components/MobileBoostCards";
 import { useHabits } from "@/hooks/useHabits";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTodayLog, useLogForDate } from "@/hooks/useDailyLogs";
@@ -32,27 +32,29 @@ export default function Dashboard() {
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
   const isToday = selectedDate === today;
+  const [editMode, setEditMode] = useState(false);
 
   // For past dates, fetch that day's log
   const { data: pastLog } = useLogForDate(selectedDate);
 
-  // completedIds: on today use local state seeded from todayLog; on past dates use the log directly
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [hasLocalEdits, setHasLocalEdits] = useState(false);
 
+  // When date changes, default to view mode for past days
   useEffect(() => {
-    if (isToday && todayLog?.completed_habits) {
-      setCompletedIds(new Set(todayLog.completed_habits));
-    } else if (isToday && todayLog === null) {
-      setCompletedIds(new Set());
-    }
-  }, [todayLog, isToday]);
+    if (!isToday) setEditMode(false);
+    setHasLocalEdits(false);
+  }, [selectedDate, isToday]);
 
-  // When date changes to a past date, load that day's completions (read-only)
-  const pastCompletedIds = !isToday && pastLog
-    ? new Set<string>(pastLog.completed_habits)
-    : new Set<string>();
+  // Seed local checkbox state from whichever log matches selectedDate, unless user has started editing.
+  useEffect(() => {
+    if (hasLocalEdits) return;
+    const log = isToday ? todayLog : pastLog;
+    if (log?.completed_habits) setCompletedIds(new Set(log.completed_habits));
+    else if (log === null) setCompletedIds(new Set());
+  }, [todayLog, pastLog, isToday, hasLocalEdits]);
 
-  const displayedIds = isToday ? completedIds : pastCompletedIds;
+  const canEdit = isToday || editMode;
 
   // Request notification permission on first load
   useEffect(() => {
@@ -78,20 +80,18 @@ export default function Dashboard() {
   }, []);
 
   const toggleHabit = (id: string) => {
-    if (!isToday) return; // past dates are read-only
+    if (!canEdit) return;
     setCompletedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+    setHasLocalEdits(true);
   };
 
   const handleSave = async () => {
-    if (!isToday) {
-      toast.error("Can only save progress for today");
-      return;
-    }
+    if (!canEdit) return;
     if (todayLogLoading) {
       toast.info("Please wait, checking today's status...");
       return;
@@ -100,15 +100,13 @@ export default function Dashboard() {
       toast.error("Stats are still loading. Try again.");
       return;
     }
-    return saveProgress(habits, completedIds, stats);
+    return saveProgress(habits, completedIds, stats, selectedDate);
   };
 
   const handleReset = () => {
-    if (!isToday) {
-      toast.error("Can only reset today's progress");
-      return;
-    }
+    if (!canEdit) return;
     setCompletedIds(new Set());
+    setHasLocalEdits(true);
     toast.success("Today's progress cleared");
   };
 
@@ -119,7 +117,7 @@ export default function Dashboard() {
     <div className="relative min-h-screen bg-background">
       <LightLeakBackground />
       <ParticleBackground />
-      <div className="relative z-10 flex flex-col min-h-screen pb-24">
+      <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />
 
         {/* Stats bar — minimal single row */}
@@ -131,7 +129,12 @@ export default function Dashboard() {
 
         {/* Date selector */}
         <div className="px-3 sm:px-4 md:px-8 pb-1">
-          <DateSelector date={selectedDate} onDateChange={setSelectedDate} />
+          <DateSelector
+            date={selectedDate}
+            onDateChange={setSelectedDate}
+            editable={editMode}
+            onEditableChange={setEditMode}
+          />
         </div>
 
         <div className="flex-1 px-2 sm:px-4 md:px-8 pb-4 md:pb-6">
@@ -140,13 +143,19 @@ export default function Dashboard() {
             <div className="space-y-3 md:space-y-2">
               {!isToday && (
                 <div className="glass rounded-xl px-3 py-2 text-center text-xs text-muted-foreground">
-                  Viewing {selectedDate} — read only
+                  {editMode ? `Editing ${selectedDate}` : `Viewing ${selectedDate} — read only`}
                 </div>
               )}
               <HabitList
-                completedIds={displayedIds}
+                completedIds={completedIds}
                 onToggle={toggleHabit}
-                viewOnly={!isToday}
+                viewOnly={!canEdit}
+              />
+              <BottomActionBar
+                onSave={handleSave}
+                onReset={handleReset}
+                disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError || !canEdit}
+                hasHabits={!!habits?.length}
               />
               <OutcomeCards />
             </div>
@@ -154,20 +163,13 @@ export default function Dashboard() {
             {/* Right column */}
             <div className="space-y-3 md:space-y-2">
               <GrowthGraph />
-              <Heatmap />
+              <MobileBoostCards />
               <JourneyInsights />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom action bar — only wire save/reset to today */}
-      <BottomActionBar
-        onSave={handleSave}
-        onReset={handleReset}
-        disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError}
-        hasHabits={!!habits?.length}
-      />
     </div>
   );
 }

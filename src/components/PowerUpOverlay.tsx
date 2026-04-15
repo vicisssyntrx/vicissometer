@@ -2,14 +2,21 @@ import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
 import { X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import StreakWindow from "./StreakWindow";
 
 interface Props { onClose: () => void; }
 
 export default function PowerUpOverlay({ onClose }: Props) {
   const { data: logs } = useDailyLogs();
   const { data: stats } = useUserStats();
+  const [showStreak, setShowStreak] = useState(false);
 
   const gaps = logs?.filter((l) => l.completed_count === 0 && !l.shield_used) || [];
+
+  if (showStreak) {
+    return <StreakWindow onClose={() => { setShowStreak(false); onClose(); }} />;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
@@ -34,7 +41,7 @@ export default function PowerUpOverlay({ onClose }: Props) {
           Use power-ups from the Streak Window to recover missed days and restore growth.
         </p>
 
-        <Button onClick={onClose} className="w-full bg-primary text-primary-foreground">
+        <Button onClick={() => setShowStreak(true)} className="w-full bg-primary text-primary-foreground">
           <Zap className="h-4 w-4 mr-2" /> Open Streak Window to Use
         </Button>
       </div>

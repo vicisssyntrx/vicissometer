@@ -4,12 +4,34 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import NotificationPanel from "./NotificationPanel";
 import AccountCenter from "./AccountCenter";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Navbar() {
   const { user } = useAuth();
   const [showNotif, setShowNotif] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
-  const initial = user?.user_metadata?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "?";
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("user_id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
+  const avatarUrl =
+    profile?.avatar_url ||
+    (user?.user_metadata as { avatar_url?: string } | undefined)?.avatar_url ||
+    null;
+  const initial = displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "?";
 
   return (
     <>
@@ -23,9 +45,12 @@ export default function Navbar() {
           </Button>
           <button
             onClick={() => setShowAccount(true)}
-            className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-semibold text-sm hover:bg-primary/30 transition-colors"
+            className="w-9 h-9 md:w-10 md:h-10 rounded-full hover:opacity-90 transition-opacity"
           >
-            {initial}
+            <Avatar className="h-9 w-9 md:h-10 md:w-10 border border-primary/40 bg-primary/20">
+              {avatarUrl ? <AvatarImage src={avatarUrl} alt="Profile" /> : null}
+              <AvatarFallback className="text-primary font-semibold text-sm">{initial}</AvatarFallback>
+            </Avatar>
           </button>
         </div>
       </nav>

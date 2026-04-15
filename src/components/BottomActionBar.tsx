@@ -50,15 +50,15 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
         </div>
       )}
 
-      {/* Fixed bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 glass-strong border-t border-white/10 px-3 py-3 pb-safe">
-        <div className="flex items-center gap-2 max-w-lg mx-auto">
+      {/* Action bar (inline; placed by parent) */}
+      <div className="glass-strong border border-white/10 rounded-2xl px-3 py-3">
+        <div className="flex items-center gap-2">
           {/* Add/Edit Habits */}
           <button
             onClick={() => setShowManage(true)}
             className={`flex-none flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-2 transition-all ${
               !hasHabits
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40 border border-primary/60 min-w-[100px] animate-pulse-subtle"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 border border-primary/60 min-w-[100px] animate-pulse-subtle"
                 : "glass text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}
           >
@@ -72,7 +72,7 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
           <button
             onClick={handleSave}
             disabled={disabled || saving}
-            className={`flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-semibold text-base bg-primary text-primary-foreground shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-semibold text-base bg-primary text-primary-foreground shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
               pulsing ? "animate-red-pulse" : ""
             }`}
           >
@@ -83,7 +83,8 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
           {/* Reset */}
           <button
             onClick={onReset}
-            className="flex-none flex flex-col items-center justify-center gap-0.5 glass rounded-xl px-3 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+            disabled={saving}
+            className="flex-none flex flex-col items-center justify-center gap-0.5 glass rounded-xl px-3 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <RotateCcw className="h-5 w-5" />
             <span className="text-[10px] leading-tight font-medium">Reset</span>
