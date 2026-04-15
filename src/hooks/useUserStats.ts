@@ -11,6 +11,7 @@ export interface UserStats {
   power_ups: number;
   current_growth: number;
   updated_at: string;
+  start_date: string;
 }
 
 export function useUserStats() {
