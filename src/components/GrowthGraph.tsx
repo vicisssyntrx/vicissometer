@@ -19,18 +19,9 @@ export default function GrowthGraph() {
   const { data: stats } = useUserStats();
   const [range, setRange] = useState<"week" | "month" | "all">("all");
 
-  if (!logs?.length) {
-    return (
-      <div className="glass rounded-2xl p-4">
-        <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Growth</h3>
-        <div className="h-36 flex items-center justify-center text-muted-foreground text-sm">
-          Save your first day to see growth
-        </div>
-      </div>
-    );
-  }
+  const safeLogs = logs ?? [];
 
-  const firstValidLog = useMemo(() => logs.find((log) => isValid(parseISO(log.date))), [logs]);
+  const firstValidLog = useMemo(() => safeLogs.find((log) => isValid(parseISO(log.date))), [safeLogs]);
   const statsStart = useMemo(() => (stats?.start_date ? parseISO(stats.start_date) : null), [stats?.start_date]);
   const programStart = useMemo(() => {
     return statsStart && isValid(statsStart)
@@ -41,12 +32,12 @@ export default function GrowthGraph() {
   }, [statsStart, firstValidLog]);
 
   const latestValidDate = useMemo(() => {
-    const dates = logs
+    const dates = safeLogs
       .map((l) => parseISO(l.date))
       .filter((d) => isValid(d))
       .sort((a, b) => a.getTime() - b.getTime());
     return dates.at(-1) ?? new Date();
-  }, [logs]);
+  }, [safeLogs]);
 
   const { filteredLogs, labelFormat } = useMemo(() => {
     const weekStart = startOfWeek(latestValidDate, { weekStartsOn: 1 });
@@ -62,17 +53,17 @@ export default function GrowthGraph() {
           : null;
 
     const kept = interval
-      ? logs.filter((l) => {
+      ? safeLogs.filter((l) => {
           const d = parseISO(l.date);
           return isValid(d) && isWithinInterval(d, interval);
         })
-      : logs;
+      : safeLogs;
 
     return {
       filteredLogs: kept,
       labelFormat: range === "week" ? "EEE" : "MMM d",
     };
-  }, [logs, latestValidDate, range]);
+  }, [safeLogs, latestValidDate, range]);
 
   const data = filteredLogs
     .map((l) => {
@@ -88,11 +79,22 @@ export default function GrowthGraph() {
     })
     .filter((item): item is { date: string; actual: number; ideal: number } => !!item);
 
+  if (!safeLogs.length) {
+    return (
+      <div className="glass rounded-2xl p-4">
+        <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Growth</h3>
+        <div className="h-36 flex items-center justify-center text-muted-foreground text-base">
+          Save your first day to see growth
+        </div>
+      </div>
+    );
+  }
+
   if (!data.length) {
     return (
       <div className="glass rounded-2xl p-4">
-        <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Growth</h3>
-        <div className="h-36 flex items-center justify-center text-muted-foreground text-sm">
+        <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Growth</h3>
+        <div className="h-36 flex items-center justify-center text-muted-foreground text-base">
           Invalid growth dates detected in history
         </div>
       </div>
