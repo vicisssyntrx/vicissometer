@@ -41,6 +41,22 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Schedule browser notifications for habit reminders
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      const now = new Date();
+      const evening = new Date();
+      evening.setHours(20, 0, 0, 0);
+      if (evening > now && !todayLog?.locked) {
+        const timeout = evening.getTime() - now.getTime();
+        const timer = setTimeout(() => {
+          new Notification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
+        }, timeout);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [todayLog]);
+
   const toggleHabit = (id: string) => {
     setCompletedIds((prev) => {
       const next = new Set(prev);
@@ -70,10 +86,10 @@ export default function Dashboard() {
         </div>
         <Greeting />
 
-        <div className="flex-1 px-3 md:px-8 pb-6">
-          <div className="grid md:grid-cols-2 gap-4 max-w-6xl mx-auto">
+        <div className="flex-1 px-2 md:px-8 pb-4">
+          <div className="grid md:grid-cols-2 gap-3 max-w-6xl mx-auto">
             {/* Left column */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <HabitCreation />
               <HabitList completedIds={completedIds} onToggle={toggleHabit} locked={locked} />
               <SaveProgressButton onSave={handleSave} locked={locked} disabled={!habits?.length} />
@@ -81,7 +97,7 @@ export default function Dashboard() {
             </div>
 
             {/* Right column */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <GrowthGraph />
               <Heatmap />
               <JourneyInsights />

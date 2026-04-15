@@ -18,13 +18,13 @@ export default function JourneyInsights() {
   ];
 
   return (
-    <div className="glass rounded-2xl p-4 md:p-6">
-      <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-4">Journey Insights</h3>
-      <div className="grid grid-cols-2 gap-3">
+    <div className="glass rounded-2xl p-3 md:p-5">
+      <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Journey Insights</h3>
+      <div className="grid grid-cols-4 gap-2">
         {items.map((item) => (
           <div key={item.label} className="text-center">
-            <p className="text-lg md:text-xl font-bold text-foreground">{item.value}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
+            <p className="text-sm md:text-lg font-bold text-foreground">{item.value}</p>
+            <p className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">{item.label}</p>
           </div>
         ))}
       </div>

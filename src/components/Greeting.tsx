@@ -1,8 +1,20 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Greeting() {
   const { user } = useAuth();
-  const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "there";
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("display_name").eq("user_id", user!.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const name = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "there";
   const hour = new Date().getHours();
 
   let greeting = "";
@@ -23,9 +35,9 @@ export default function Greeting() {
   }
 
   return (
-    <div className="px-4 md:px-8 pt-3 pb-1">
-      <h2 className="text-lg md:text-xl font-bold text-foreground">{greeting}</h2>
-      <p className="text-xs text-muted-foreground">{message}</p>
+    <div className="px-3 md:px-8 pt-2 pb-1">
+      <h2 className="text-base md:text-xl font-bold text-foreground">{greeting}</h2>
+      <p className="text-[11px] md:text-xs text-muted-foreground">{message}</p>
     </div>
   );
 }
