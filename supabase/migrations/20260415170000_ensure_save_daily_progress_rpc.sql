@@ -20,7 +20,6 @@ set search_path = public
 as $$
 declare
   v_user_id uuid := auth.uid();
-  v_locked boolean := false;
 begin
   if v_user_id is null then
     return jsonb_build_object('success', false, 'message', 'Not authenticated');
@@ -29,16 +28,6 @@ begin
   insert into public.user_stats (user_id)
   values (v_user_id)
   on conflict (user_id) do nothing;
-
-  select locked
-  into v_locked
-  from public.daily_logs
-  where user_id = v_user_id and date = p_date
-  for update;
-
-  if coalesce(v_locked, false) then
-    return jsonb_build_object('success', false, 'message', 'Today is already saved');
-  end if;
 
   insert into public.daily_logs (
     user_id,

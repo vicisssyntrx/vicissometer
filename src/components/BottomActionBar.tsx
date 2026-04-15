@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Save, RotateCcw, ListPlus } from "lucide-react";
 import HabitCreation from "./HabitCreation";
 import HabitEditList from "./HabitEditList";
+import { createPortal } from "react-dom";
 
 interface Props {
   onSave: () => Promise<boolean | undefined>;
@@ -28,13 +29,13 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
   return (
     <>
       {/* Manage Habits Sheet */}
-      {showManage && (
+      {showManage && createPortal(
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowManage(false)}
           />
-          <div className="relative glass-strong rounded-t-2xl p-4 pb-8 space-y-4 max-h-[80vh] overflow-y-auto">
+          <div className="relative w-full glass-strong rounded-t-2xl p-4 pb-8 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-bold text-foreground">Manage Habits</h3>
               <button
@@ -47,7 +48,8 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
             <HabitCreation />
             <HabitEditList />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Action bar (inline; placed by parent) */}

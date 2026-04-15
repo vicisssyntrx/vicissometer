@@ -10,8 +10,8 @@ interface Props {
 }
 
 function formatDisplay(dateStr: string) {
-  const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+  const today = toYmd(new Date());
+  const yesterday = addDays(today, -1);
   if (dateStr === today) return "Today";
   if (dateStr === yesterday) return "Yesterday";
   const d = new Date(dateStr + "T00:00:00");
@@ -19,9 +19,11 @@ function formatDisplay(dateStr: string) {
 }
 
 function addDays(dateStr: string, days: number) {
-  const d = new Date(dateStr + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  // Use UTC to avoid timezone shifting issues when converting back to ISO.
+  const [y, m, d] = dateStr.split("-").map((v) => Number(v));
+  const utc = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  utc.setUTCDate(utc.getUTCDate() + days);
+  return utc.toISOString().slice(0, 10);
 }
 
 function parseDate(dateStr: string) {
@@ -37,7 +39,7 @@ function toYmd(d: Date) {
 }
 
 export default function DateSelector({ date, onDateChange, editable = false, onEditableChange }: Props) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = toYmd(new Date());
   const isToday = date === today;
 
   return (

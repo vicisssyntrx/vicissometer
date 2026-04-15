@@ -21,7 +21,9 @@ export default function CsvImport({ onClose }: Props) {
   const [importing, setImporting] = useState(false);
 
   const parseCSV = (text: string): { rows: ParsedRow[]; errs: string[] } => {
-    const lines = text.trim().split("\n").slice(1);
+    const normalized = text.trim();
+    if (!normalized) return { rows: [], errs: ["File is empty"] };
+    const lines = normalized.split(/\r?\n/).slice(1);
     const rows: ParsedRow[] = [];
     const errs: string[] = [];
     const seen = new Set<string>();
@@ -75,6 +77,8 @@ export default function CsvImport({ onClose }: Props) {
   };
 
   const parseFile = (file: File) => {
+    setPreview(null);
+    setErrors([]);
     const isXlsx = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
     if (isXlsx) {
       const reader = new FileReader();
@@ -136,14 +140,26 @@ export default function CsvImport({ onClose }: Props) {
       return;
     }
 
-    // Update stats — only growth and streak, no coins/shields
-    await supabase.from("user_stats").update({
-      current_growth: growth,
-      streak,
-    }).eq("user_id", user.id);
+    // Ensure user_stats exists and update growth/streak atomically for import.
+    const { error: statsErr } = await supabase
+      .from("user_stats")
+      .upsert(
+        {
+          user_id: user.id,
+          current_growth: growth,
+          streak,
+        },
+        { onConflict: "user_id" }
+      );
+    if (statsErr) {
+      toast.error("Import saved logs, but failed to update stats: " + statsErr.message);
+      setImporting(false);
+      return;
+    }
 
     qc.invalidateQueries({ queryKey: ["daily_logs"] });
     qc.invalidateQueries({ queryKey: ["user_stats"] });
+    qc.invalidateQueries({ queryKey: ["daily_log_today"] });
     toast.success(`Imported ${preview.length} days!`);
     setImporting(false);
     onClose();

@@ -2,6 +2,7 @@ import { useUserStats } from "@/hooks/useUserStats";
 import { useState } from "react";
 import ShieldShop from "./ShieldShop";
 import StreakWindow from "./StreakWindow";
+import PowerUpOverlay from "./PowerUpOverlay";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const statItems = [
@@ -16,13 +17,14 @@ export default function StatsBar() {
   const isMobile = useIsMobile();
   const [showShields, setShowShields] = useState(false);
   const [showStreak, setShowStreak] = useState(false);
+  const [showPowerUps, setShowPowerUps] = useState(false);
 
   const visibleItems = isMobile ? statItems.filter((s) => s.key === "coins" || s.key === "streak") : statItems;
 
   const handleClick = (key: (typeof statItems)[number]["key"]) => {
     if (key === "shields") setShowShields(true);
     if (key === "streak") setShowStreak(true);
-    if (key === "power_ups") setShowStreak(true);
+    if (key === "power_ups") setShowPowerUps(true);
   };
 
   return (
@@ -43,6 +45,7 @@ export default function StatsBar() {
       </div>
       {showShields && <ShieldShop onClose={() => setShowShields(false)} />}
       {showStreak && <StreakWindow onClose={() => setShowStreak(false)} />}
+      {showPowerUps && <PowerUpOverlay onClose={() => setShowPowerUps(false)} />}
     </>
   );
 }

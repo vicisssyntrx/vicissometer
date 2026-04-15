@@ -20,6 +20,7 @@ set search_path = public
 as $$
 declare
   v_user_id uuid := auth.uid();
+  v_existing_locked boolean := false;
 begin
   if v_user_id is null then
     return jsonb_build_object('success', false, 'message', 'Not authenticated');
@@ -28,6 +29,25 @@ begin
   insert into public.user_stats (user_id)
   values (v_user_id)
   on conflict (user_id) do nothing;
+
+  select locked
+  into v_existing_locked
+  from public.daily_logs
+  where user_id = v_user_id and date = p_date
+  for update;
+
+  -- If the day is already locked, allow updating the log contents without re-awarding rewards.
+  if coalesce(v_existing_locked, false) then
+    update public.daily_logs
+    set
+      completed_habits = p_completed_habits,
+      completed_count = p_completed_count,
+      total_count = p_total_count,
+      shield_used = p_shield_used
+    where user_id = v_user_id and date = p_date;
+
+    return jsonb_build_object('success', true, 'message', 'Updated');
+  end if;
 
   insert into public.daily_logs (
     user_id,
@@ -76,34 +96,3 @@ begin
 end;
 $$;
 
-revoke all on function public.save_daily_progress(
-  date,
-  integer,
-  jsonb,
-  integer,
-  boolean,
-  integer,
-  double precision,
-  double precision,
-  integer,
-  integer,
-  integer,
-  integer,
-  double precision
-) from public;
-
-grant execute on function public.save_daily_progress(
-  date,
-  integer,
-  jsonb,
-  integer,
-  boolean,
-  integer,
-  double precision,
-  double precision,
-  integer,
-  integer,
-  integer,
-  integer,
-  double precision
-) to authenticated;

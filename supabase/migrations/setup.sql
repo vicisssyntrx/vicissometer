@@ -120,7 +120,6 @@ SET search_path = public
 AS $$
 DECLARE
   v_user_id UUID := auth.uid();
-  v_locked BOOLEAN := false;
 BEGIN
   IF v_user_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'message', 'Not authenticated');
@@ -129,16 +128,6 @@ BEGIN
   INSERT INTO public.user_stats (user_id)
   VALUES (v_user_id)
   ON CONFLICT (user_id) DO NOTHING;
-
-  SELECT locked
-  INTO v_locked
-  FROM public.daily_logs
-  WHERE user_id = v_user_id AND date = p_date
-  FOR UPDATE;
-
-  IF coalesce(v_locked, false) THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Today is already saved');
-  END IF;
 
   INSERT INTO public.daily_logs (
     user_id,

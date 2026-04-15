@@ -5,13 +5,18 @@ export default function JourneyInsights() {
   const { data: logs } = useDailyLogs();
   const { data: stats } = useUserStats();
 
+  const formatGrowth = (value: number | undefined) => {
+    if (value === undefined || Number.isNaN(value)) return "1";
+    return Number(value.toFixed(4)).toString();
+  };
+
   const totalDays = logs?.length || 0;
   const missedDays = logs?.filter((l) => l.completed_count === 0 && !l.shield_used).length || 0;
   const completedDays = logs?.filter((l) => l.completed_count === l.total_count && l.total_count > 0).length || 0;
   const completionRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
   const items = [
-    { label: "Current Growth", value: stats?.current_growth?.toFixed(4) || "1.0000" },
+    { label: "Current Growth", value: formatGrowth(stats?.current_growth) },
     { label: "Days Tracked", value: totalDays },
     { label: "Missed Days", value: missedDays },
     { label: "Completion Rate", value: `${completionRate}%` },

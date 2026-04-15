@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 
 export default function Greeting() {
   const { user } = useAuth();
@@ -34,10 +35,37 @@ export default function Greeting() {
     message = "Rest well. Tomorrow is another 1%.";
   }
 
+  const fullGreeting = useMemo(() => greeting, [greeting]);
+  const [typedGreeting, setTypedGreeting] = useState(fullGreeting);
+
+  useEffect(() => {
+    const key = "viciss_greeting_typed_once";
+    const alreadyTyped = sessionStorage.getItem(key) === "true";
+    if (alreadyTyped) {
+      setTypedGreeting(fullGreeting);
+      return;
+    }
+
+    let idx = 0;
+    setTypedGreeting("");
+    const timer = window.setInterval(() => {
+      idx += 1;
+      setTypedGreeting(fullGreeting.slice(0, idx));
+      if (idx >= fullGreeting.length) {
+        window.clearInterval(timer);
+        sessionStorage.setItem(key, "true");
+      }
+    }, 24);
+
+    return () => window.clearInterval(timer);
+  }, [fullGreeting]);
+
   return (
-    <div className="px-3 sm:px-4 md:px-8 pt-3 pb-2">
-      <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">{greeting}</h2>
-      <p className="text-sm md:text-base text-muted-foreground mt-0.5">{message}</p>
+    <div className="px-3 sm:px-5 pt-3 pb-2">
+      <div className="mx-auto w-full max-w-[1060px]">
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">{typedGreeting}</h2>
+        <p className="text-base md:text-lg text-muted-foreground mt-0.5">{message}</p>
+      </div>
     </div>
   );
 }

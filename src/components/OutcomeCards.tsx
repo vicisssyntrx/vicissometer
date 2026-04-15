@@ -1,25 +1,11 @@
 import { useHabits } from "@/hooks/useHabits";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useMemo } from "react";
-import { useUserStats } from "@/hooks/useUserStats";
 
 export default function OutcomeCards() {
   const { data: habits } = useHabits();
   const { data: logs } = useDailyLogs();
-  const { data: stats } = useUserStats();
   const safeHabits = useMemo(() => habits ?? [], [habits]);
-
-  const journeyStart = useMemo(() => {
-    // start_date is stored as YYYY-MM-DD
-    return stats?.start_date ?? null;
-  }, [stats?.start_date]);
-
-  const daysBetween = (a: string, b: string) => {
-    const da = new Date(a + "T00:00:00");
-    const db = new Date(b + "T00:00:00");
-    const diff = db.getTime() - da.getTime();
-    return Math.floor(diff / 86400000);
-  };
 
   const outcomes = useMemo(() => {
     const grouped = new Map<
@@ -34,14 +20,16 @@ export default function OutcomeCards() {
 
     if (!grouped.size) return grouped;
 
-    // Build a quick lookup: habitId -> # of days completed (since habit creation)
+    // Build lookup maps per habit to avoid under-reporting due to fixed 365-day divisor.
     const completedDaysByHabit = new Map<string, number>();
+    const possibleDaysByHabit = new Map<string, number>();
     if (logs) {
       for (const log of logs) {
-        const completedSet = new Set(log.completed_habits);
         for (const h of safeHabits) {
           const createdDate = h.created_at.slice(0, 10);
           if (log.date < createdDate) continue;
+          possibleDaysByHabit.set(h.id, (possibleDaysByHabit.get(h.id) ?? 0) + 1);
+          const completedSet = new Set(log.completed_habits);
           if (!completedSet.has(h.id)) continue;
           completedDaysByHabit.set(h.id, (completedDaysByHabit.get(h.id) ?? 0) + 1);
         }
@@ -50,24 +38,21 @@ export default function OutcomeCards() {
 
     for (const [, outcome] of grouped) {
       for (const h of outcome.habits) {
-        const createdDate = h.created_at.slice(0, 10);
-        const baseStart = journeyStart ?? createdDate;
-        const offsetDays = Math.max(0, daysBetween(baseStart, createdDate));
-        const effectiveDays = Math.max(1, 365 - offsetDays);
+        const possibleDays = possibleDaysByHabit.get(h.id) ?? 0;
         const completedDays = completedDaysByHabit.get(h.id) ?? 0;
-        const pct = Math.min(100, (completedDays / effectiveDays) * 100);
+        const pct = possibleDays > 0 ? Math.min(100, (completedDays / possibleDays) * 100) : 0;
         outcome.habitPercents.push(pct);
       }
     }
     return grouped;
-  }, [safeHabits, logs, journeyStart]);
+  }, [safeHabits, logs]);
 
   if (!safeHabits.length) return null;
 
   return (
     <div className="space-y-2">
       <h3 className="text-sm uppercase tracking-wider text-muted-foreground px-1">Becoming</h3>
-      <div className="grid gap-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         {Array.from(outcomes.entries()).map(([name, o]) => {
           const ratio =
             o.habitPercents.length > 0

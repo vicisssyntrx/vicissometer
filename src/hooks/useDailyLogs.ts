@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Json } from "@/integrations/supabase/types";
+import { todayYmdLocal } from "@/lib/date";
 
 export interface DailyLog {
   id: string;
@@ -49,7 +50,7 @@ export function useDailyLogs() {
 
 export function useTodayLog() {
   const { user } = useAuth();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayYmdLocal();
   return useQuery({
     queryKey: ["daily_log_today", user?.id, today],
     queryFn: async () => {

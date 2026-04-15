@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Habit } from "./useHabits";
 import { UserStats } from "./useUserStats";
 import type { Json } from "@/integrations/supabase/types";
+import { todayYmdLocal } from "@/lib/date";
 
 interface SaveProgressResponse {
   success?: boolean;
@@ -27,6 +28,8 @@ export function useSaveProgress() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
+  const localToday = () => todayYmdLocal();
+
   const saveProgress = async (
     habits: Habit[],
     completedIds: Set<string>,
@@ -34,7 +37,8 @@ export function useSaveProgress() {
     dateOverride?: string
   ) => {
     if (!user) return;
-    const today = dateOverride ?? new Date().toISOString().split("T")[0];
+    const targetDate = dateOverride ?? localToday();
+    const isSavingToday = targetDate === localToday();
     const total = habits.length;
     const completed = completedIds.size;
 
@@ -43,7 +47,37 @@ export function useSaveProgress() {
       return;
     }
 
-    // Growth calc
+    // Past-day editing should NOT award coins, change streak, or mutate user_stats.
+    if (!isSavingToday) {
+      const { error } = await supabase
+        .from("daily_logs")
+        .upsert(
+          {
+            user_id: user.id,
+            date: targetDate,
+            completed_habits: Array.from(completedIds),
+            completed_count: completed,
+            total_count: total,
+            shield_used: false,
+            streak_after: 0,
+            growth_before: 1.0,
+            growth_after: 1.0,
+            locked: false,
+          },
+          { onConflict: "user_id,date" }
+        );
+      if (error) {
+        toast.error("Failed to save progress: " + error.message);
+        return;
+      }
+      qc.invalidateQueries({ queryKey: ["daily_logs"] });
+      qc.invalidateQueries({ queryKey: ["daily_log_today"] });
+      qc.invalidateQueries({ queryKey: ["daily_log_date"] });
+      toast.success("Progress saved!");
+      return true;
+    }
+
+    // Today: apply rewards and update stats (RPC handles upsert)
     const prevGrowth = stats.current_growth;
     let newGrowth = prevGrowth;
     let newStreak = stats.streak;
@@ -60,29 +94,22 @@ export function useSaveProgress() {
     if (completed === total) {
       newStreak += 1;
       newCoins += 10;
-      // Power-up every 7 full days
-      if (newStreak > 0 && newStreak % 7 === 0) {
-        newPowerUps += 1;
-      }
+      if (newStreak > 0 && newStreak % 7 === 0) newPowerUps += 1;
     } else if (completed === 0) {
       if (stats.shields > 0) {
         newShields -= 1;
         shieldUsed = true;
-        // streak preserved, no growth
         newGrowth = prevGrowth;
       } else {
         newStreak = 0;
         newGrowth = prevGrowth;
       }
     }
-    // Partial: streak breaks (not shielded for partial)
 
-    if (completed > 0 && completed < total) {
-      newStreak = 0;
-    }
+    if (completed > 0 && completed < total) newStreak = 0;
 
     const { data, error: rpcError } = await supabase.rpc("save_daily_progress", {
-      p_date: today,
+      p_date: targetDate,
       p_total_count: total,
       p_completed_habits: Array.from(completedIds),
       p_completed_count: completed,
@@ -111,15 +138,10 @@ export function useSaveProgress() {
     qc.invalidateQueries({ queryKey: ["daily_logs"] });
     qc.invalidateQueries({ queryKey: ["daily_log_today"] });
 
-    if (completed === total) {
-      toast.success("Perfect day! +10 coins");
-    } else if (shieldUsed) {
-      toast.info("Shield protected your streak");
-    } else if (completed > 0) {
-      toast.success("Progress saved!");
-    } else {
-      toast.warning("Day saved. Streak reset.");
-    }
+    if (completed === total) toast.success("Perfect day! +10 coins");
+    else if (shieldUsed) toast.info("Shield protected your streak");
+    else if (completed > 0) toast.success("Progress saved!");
+    else toast.warning("Day saved. Streak reset.");
 
     return true;
   };

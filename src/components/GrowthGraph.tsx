@@ -19,7 +19,7 @@ export default function GrowthGraph() {
   const { data: stats } = useUserStats();
   const [range, setRange] = useState<"week" | "month" | "all">("all");
 
-  const safeLogs = logs ?? [];
+  const safeLogs = useMemo(() => logs ?? [], [logs]);
 
   const firstValidLog = useMemo(() => safeLogs.find((log) => isValid(parseISO(log.date))), [safeLogs]);
   const statsStart = useMemo(() => (stats?.start_date ? parseISO(stats.start_date) : null), [stats?.start_date]);
@@ -65,19 +65,38 @@ export default function GrowthGraph() {
     };
   }, [safeLogs, latestValidDate, range]);
 
-  const data = filteredLogs
-    .map((l) => {
-      const parsedDate = parseISO(l.date);
-      if (!isValid(parsedDate)) return null;
-      const dayNum = differenceInDays(parsedDate, programStart);
+  // Recompute "actual" deterministically from logs so backfilled edits don't create spikes/drops.
+  // 1% rule: daily multiplier is 1 + (completionRatio)*0.01
+  const data = useMemo(() => {
+    const sorted = [...filteredLogs]
+      .map((l) => {
+        const d = parseISO(l.date);
+        return isValid(d) ? { ...l, _d: d } : null;
+      })
+      .filter((x): x is (typeof filteredLogs[number] & { _d: Date }) => !!x)
+      .sort((a, b) => a._d.getTime() - b._d.getTime());
+
+    let actual = 1.0;
+    return sorted.map((l) => {
+      const dayNum = differenceInDays(l._d, programStart);
       const idealGrowth = Math.pow(1.01, Math.max(0, dayNum));
+
+      // Some flows may mark recovered gaps with negative completed_count; treat as full completion.
+      const effectiveCompleted = l.completed_count < 0 ? l.total_count : l.completed_count;
+      const ratio =
+        l.total_count > 0
+          ? Math.max(0, Math.min(1, effectiveCompleted / l.total_count))
+          : 0;
+      actual = actual * (1 + ratio * 0.01);
+
       return {
-        date: format(parsedDate, labelFormat),
-        actual: Number(l.growth_after.toFixed(4)),
+        day: Math.max(0, dayNum),
+        label: format(l._d, labelFormat),
+        actual: Number(actual.toFixed(4)),
         ideal: Number(idealGrowth.toFixed(4)),
       };
-    })
-    .filter((item): item is { date: string; actual: number; ideal: number } => !!item);
+    });
+  }, [filteredLogs, labelFormat, programStart]);
 
   if (!safeLogs.length) {
     return (
@@ -135,9 +154,23 @@ export default function GrowthGraph() {
       </div>
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={data}>
-          <XAxis dataKey="date" tick={{ fill: "hsl(0,0%,55%)", fontSize: 11 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+          <XAxis
+            dataKey="day"
+            type="number"
+            domain={["dataMin", "dataMax"]}
+            tick={{ fill: "hsl(0,0%,55%)", fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v) => String(v)}
+          />
           <YAxis tick={{ fill: "hsl(0,0%,55%)", fontSize: 11 }} axisLine={false} tickLine={false} domain={["dataMin", "auto"]} width={44} />
-          <Tooltip contentStyle={{ background: "hsl(0,0%,12%)", border: "1px solid hsl(0,0%,20%)", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+          <Tooltip
+            labelFormatter={(v, payload) => {
+              const first = payload?.[0]?.payload as { label?: string } | undefined;
+              return first?.label ? `${first.label} (Day ${v})` : `Day ${v}`;
+            }}
+            contentStyle={{ background: "hsl(0,0%,12%)", border: "1px solid hsl(0,0%,20%)", borderRadius: 8, color: "#fff", fontSize: 12 }}
+          />
           <Line type="monotone" dataKey="ideal" stroke="hsl(0,0%,35%)" strokeDasharray="4 4" dot={false} strokeWidth={1} name="Ideal (1%/day)" />
           <Line type="monotone" dataKey="actual" stroke="hsl(0,72%,51%)" dot={false} strokeWidth={2} name="Your Growth" />
         </LineChart>

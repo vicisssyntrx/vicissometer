@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useUserStats } from "@/hooks/useUserStats";
 import ShieldShop from "./ShieldShop";
-import StreakWindow from "./StreakWindow";
+import PowerUpOverlay from "./PowerUpOverlay";
 
 export default function MobileBoostCards() {
   const { data: stats } = useUserStats();
   const [showShields, setShowShields] = useState(false);
-  const [showStreak, setShowStreak] = useState(false);
+  const [showPowerUps, setShowPowerUps] = useState(false);
 
   return (
     <>
-      <div className="md:hidden grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setShowShields(true)}
@@ -25,7 +25,7 @@ export default function MobileBoostCards() {
 
         <button
           type="button"
-          onClick={() => setShowStreak(true)}
+          onClick={() => setShowPowerUps(true)}
           className="glass rounded-2xl p-3 text-left hover:bg-secondary/60 transition-colors"
         >
           <div className="flex items-center justify-between">
@@ -37,7 +37,7 @@ export default function MobileBoostCards() {
       </div>
 
       {showShields && <ShieldShop onClose={() => setShowShields(false)} />}
-      {showStreak && <StreakWindow onClose={() => setShowStreak(false)} />}
+      {showPowerUps && <PowerUpOverlay onClose={() => setShowPowerUps(false)} />}
     </>
   );
 }

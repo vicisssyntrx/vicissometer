@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -34,6 +34,7 @@ export default function AccountCenter({ onClose }: Props) {
   );
   const [resetting, setResetting] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const installLabel = useMemo(() => getInstallLabel(), []);
   const isInstalled = isRunningStandalone();
   const isMobile = isMobileDevice();
@@ -88,6 +89,30 @@ export default function AccountCenter({ onClose }: Props) {
     setEditingProfile(false);
   };
 
+  const handleSelectAvatar = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarPicked = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      toast.error("Image must be less than 1 MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = String(reader.result || "");
+      setAvatarUrl(base64);
+      toast.success("Image selected");
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSetStartDate = async (date: Date | undefined) => {
     if (!date || !user) return;
     setStartDate(date);
@@ -119,6 +144,11 @@ export default function AccountCenter({ onClose }: Props) {
     if (!user) return;
     const confirmed = window.confirm("This will delete ALL your data (habits, history, stats) and start fresh. Are you sure?");
     if (!confirmed) return;
+    const token = window.prompt('Type "RESET" to confirm permanent data deletion');
+    if (token !== "RESET") {
+      toast.info("Reset cancelled");
+      return;
+    }
     setResetting(true);
     const { error: logDeleteError } = await supabase.from("daily_logs").delete().eq("user_id", user.id);
     if (logDeleteError) {
@@ -191,9 +221,10 @@ export default function AccountCenter({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-3 sm:p-4">
       <div className="glass-strong rounded-2xl p-4 sm:p-5 w-full max-w-sm max-h-[92vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold text-foreground">Account</h2>
-          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
+        <div className="relative mb-3">
+          <button onClick={onClose} className="absolute right-0 top-0"><X className="h-5 w-5 text-muted-foreground" /></button>
+          <h1 className="text-2xl font-bold text-foreground text-center">Vicissometer</h1>
+          <h2 className="text-xl font-bold text-foreground text-center">Account Centre</h2>
         </div>
 
         {/* Profile */}
@@ -206,12 +237,16 @@ export default function AccountCenter({ onClose }: Props) {
             {editingProfile ? (
               <div className="space-y-2">
                 <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-secondary border-border h-10 text-base" placeholder="Display Name" />
-                <Input
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  className="bg-secondary border-border h-10 text-base"
-                  placeholder="Avatar image URL (optional)"
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleAvatarPicked(e.target.files?.[0])}
                 />
+                <Button type="button" variant="secondary" onClick={handleSelectAvatar} className="w-full h-10 text-sm">
+                  Select Image (max 1 MB)
+                </Button>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleUpdateProfile} className="bg-primary text-primary-foreground text-sm h-8">Save</Button>
                   <Button size="sm" variant="ghost" onClick={() => setEditingProfile(false)} className="text-sm h-8">Cancel</Button>
