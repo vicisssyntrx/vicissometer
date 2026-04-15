@@ -1,0 +1,1 @@
+ALTER TABLE public.user_stats ADD COLUMN start_date date NOT NULL DEFAULT CURRENT_DATE;

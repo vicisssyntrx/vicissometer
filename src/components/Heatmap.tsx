@@ -1,13 +1,16 @@
 import { useDailyLogs } from "@/hooks/useDailyLogs";
-import { format, eachDayOfInterval, startOfYear, endOfYear, parseISO, getDay } from "date-fns";
+import { useUserStats } from "@/hooks/useUserStats";
+import { format, eachDayOfInterval, parseISO, getDay, addYears } from "date-fns";
 
 export default function Heatmap() {
   const { data: logs } = useDailyLogs();
+  const { data: stats } = useUserStats();
 
-  const year = new Date().getFullYear();
-  const start = startOfYear(new Date(year, 0, 1));
-  const end = endOfYear(new Date(year, 0, 1));
-  const days = eachDayOfInterval({ start, end });
+  // Use program start_date for the heatmap range
+  const start = stats?.start_date ? parseISO(stats.start_date) : new Date(new Date().getFullYear(), 0, 1);
+  const end = stats?.start_date ? addYears(parseISO(stats.start_date), 1) : new Date(new Date().getFullYear(), 11, 31);
+  
+  const days = eachDayOfInterval({ start, end: end > new Date() ? new Date() : end });
 
   const logMap = new Map<string, { completed: number; total: number; shielded: boolean }>();
   if (logs) {
@@ -37,8 +40,8 @@ export default function Heatmap() {
   if (currentWeek.length) weeks.push(currentWeek);
 
   return (
-    <div className="glass rounded-2xl p-4 md:p-6">
-      <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Heatmap</h3>
+    <div className="glass rounded-2xl p-3 md:p-5">
+      <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Heatmap</h3>
       <div className="overflow-x-auto">
         <div className="flex gap-[2px] min-w-[680px]">
           {weeks.map((week, wi) => (
@@ -46,22 +49,18 @@ export default function Heatmap() {
               {week.map((day) => {
                 const dateStr = format(day, "yyyy-MM-dd");
                 return (
-                  <div
-                    key={dateStr}
-                    className={`w-3 h-3 rounded-[2px] ${getColor(dateStr)} transition-colors`}
-                    title={`${format(day, "MMM d")}`}
-                  />
+                  <div key={dateStr} className={`w-2.5 h-2.5 rounded-[2px] ${getColor(dateStr)} transition-colors`} title={format(day, "MMM d")} />
                 );
               })}
             </div>
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-secondary/50" /> None</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-primary/50" /> Partial</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-primary" /> Full</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-[2px] bg-primary/40 ring-1 ring-primary/60" /> Shielded</span>
+      <div className="flex items-center gap-2 mt-1.5 text-[9px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-secondary/50" /> None</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-primary/50" /> Partial</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-primary" /> Full</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-[2px] bg-primary/40 ring-1 ring-primary/60" /> Shielded</span>
       </div>
     </div>
   );

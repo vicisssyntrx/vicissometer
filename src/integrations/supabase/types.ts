@@ -126,6 +126,7 @@ export type Database = {
           id: string
           power_ups: number
           shields: number
+          start_date: string
           streak: number
           updated_at: string
           user_id: string
@@ -136,6 +137,7 @@ export type Database = {
           id?: string
           power_ups?: number
           shields?: number
+          start_date?: string
           streak?: number
           updated_at?: string
           user_id: string
@@ -146,6 +148,7 @@ export type Database = {
           id?: string
           power_ups?: number
           shields?: number
+          start_date?: string
           streak?: number
           updated_at?: string
           user_id?: string

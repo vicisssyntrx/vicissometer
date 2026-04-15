@@ -24,7 +24,7 @@ export default function SaveProgressButton({ onSave, locked, disabled }: Props) 
 
   if (locked) {
     return (
-      <div className="glass rounded-xl p-4 text-center text-muted-foreground">
+      <div className="glass rounded-xl p-3 text-center text-muted-foreground text-sm">
         ✅ Today's progress is saved and locked
       </div>
     );
@@ -34,9 +34,9 @@ export default function SaveProgressButton({ onSave, locked, disabled }: Props) 
     <Button
       onClick={handle}
       disabled={disabled || saving}
-      className={`w-full h-14 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all ${pulsing ? "animate-red-pulse" : ""}`}
+      className={`w-full h-11 md:h-14 text-sm md:text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 transition-all ${pulsing ? "animate-red-pulse" : ""}`}
     >
-      <Save className="h-5 w-5 mr-2" />
+      <Save className="h-4 w-4 mr-2" />
       {saving ? "Saving..." : "Save Progress"}
     </Button>
   );
