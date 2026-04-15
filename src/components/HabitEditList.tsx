@@ -1,0 +1,82 @@
+import { useHabits, useDeleteHabit } from "@/hooks/useHabits";
+import { useUpdateHabit } from "@/hooks/useUpdateHabit";
+import { Trash2, Pencil, Check, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { toast } from "sonner";
+
+export default function HabitEditList() {
+  const { data: habits, isLoading } = useHabits();
+  const deleteHabit = useDeleteHabit();
+  const updateHabit = useUpdateHabit();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmoji, setEditEmoji] = useState("");
+  const [editOutcome, setEditOutcome] = useState("");
+  const [editOutcomeEmoji, setEditOutcomeEmoji] = useState("");
+
+  if (isLoading) return <div className="text-center text-muted-foreground text-sm py-2">Loading...</div>;
+  if (!habits?.length) return null;
+
+  const startEdit = (h: typeof habits[0]) => {
+    setEditingId(h.id);
+    setEditName(h.name);
+    setEditEmoji(h.emoji);
+    setEditOutcome(h.outcome_name || "");
+    setEditOutcomeEmoji(h.outcome_emoji || "");
+  };
+
+  const saveEdit = () => {
+    if (!editingId || !editName.trim()) { toast.error("Name required"); return; }
+    updateHabit.mutate({
+      id: editingId, name: editName.trim(), emoji: editEmoji || "✅",
+      outcome_name: editOutcome.trim() || null, outcome_emoji: editOutcomeEmoji || null,
+    }, { onSuccess: () => { setEditingId(null); toast.success("Updated!"); } });
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider px-1">Existing Habits</p>
+      {habits.map((h) => {
+        const isEditing = editingId === h.id;
+
+        if (isEditing) {
+          return (
+            <div key={h.id} className="glass rounded-xl p-3 space-y-2">
+              <div className="flex gap-2 items-center">
+                <Input value={editEmoji} onChange={(e) => setEditEmoji(e.target.value)} className="bg-secondary border-border w-14 text-center text-lg h-10" maxLength={4} />
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="bg-secondary border-border flex-1 h-10 text-base" />
+              </div>
+              <div className="flex gap-2 items-center">
+                <Input value={editOutcomeEmoji} onChange={(e) => setEditOutcomeEmoji(e.target.value)} className="bg-secondary border-border w-14 text-center text-lg h-10" maxLength={4} placeholder="🧠" />
+                <Input value={editOutcome} onChange={(e) => setEditOutcome(e.target.value)} className="bg-secondary border-border flex-1 h-10 text-base" placeholder="Outcome" />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-foreground p-2"><X className="h-4 w-4" /></button>
+                <button onClick={saveEdit} className="text-primary hover:text-primary/80 p-2"><Check className="h-4 w-4" /></button>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div key={h.id} className="glass rounded-xl px-3 py-2.5 flex items-center gap-3">
+            <span className="text-xl">{h.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-foreground text-sm truncate">{h.name}</p>
+              {h.outcome_name && (
+                <p className="text-xs text-muted-foreground">{h.outcome_emoji} {h.outcome_name}</p>
+              )}
+            </div>
+            <button onClick={() => startEdit(h)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button onClick={() => deleteHabit.mutate(h.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
