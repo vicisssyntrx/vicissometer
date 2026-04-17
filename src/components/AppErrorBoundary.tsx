@@ -41,7 +41,7 @@ export default class AppErrorBoundary extends React.Component<Props, State> {
 
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-        <div className="glass-strong rounded-2xl p-5 w-full max-w-lg">
+        <div className="glass rounded-2xl p-5 w-full max-w-lg">
           <div className="text-sm uppercase tracking-wider text-muted-foreground mb-2">App Error</div>
           <div className="text-lg font-semibold mb-2">Something crashed while rendering.</div>
           <pre className="text-xs whitespace-pre-wrap break-words text-muted-foreground bg-black/30 rounded-xl p-3 border border-white/10">

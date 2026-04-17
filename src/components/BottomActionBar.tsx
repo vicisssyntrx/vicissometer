@@ -56,7 +56,7 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
       )}
 
       {/* Action bar (inline; placed by parent) */}
-      <div className="glass-strong border border-white/10 rounded-2xl px-3 py-3">
+      <div className="glass rounded-2xl px-3 py-3">
         <div className="flex items-center gap-2">
           {/* Add/Edit Habits */}
           <button

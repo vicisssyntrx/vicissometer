@@ -14,12 +14,12 @@ export default function JourneyInsights() {
 
   const totalDays = denseLogs.length || 0;
   const missedDays = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used).length || 0;
-  const completedDays = denseLogs.filter((l) => l.completed_count === l.total_count && l.total_count > 0).length || 0;
+  const completedDays = denseLogs.filter((l) => (l.completed_count === l.total_count && l.total_count > 0) || l.completed_count === -1).length || 0;
   const completionRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
   const items = [
     { label: "Current Growth", value: formatGrowth(stats?.current_growth), colorClass: "text-[#fbbf24] drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" },
-    { label: "Completed Days", value: completedDays, colorClass: "text-[#4ade80]" },
+    { label: "Completed Days", value: <><span className="text-[#4ade80]">{completedDays}</span><span className="text-foreground text-[10px] md:text-sm ml-1 font-medium">/ {totalDays}</span></>, colorClass: "" },
     { label: "Missed Days", value: missedDays, colorClass: "text-[#f87171]" },
     { label: "Completion Rate", value: `${completionRate}%`, colorClass: "text-foreground" },
   ];

@@ -39,7 +39,7 @@ export default function LoadingScreen({ message }: Props) {
       />
 
       {/* Card */}
-      <div className="relative z-10 flex flex-col items-center gap-6 px-8 py-10 glass-strong rounded-2xl w-72 shadow-2xl">
+      <div className="relative z-10 flex flex-col items-center gap-6 px-8 py-10 glass rounded-2xl w-72 shadow-2xl">
         {/* Logo / brand */}
         <div className="flex flex-col items-center gap-1">
           <span className="text-4xl select-none">⚡</span>

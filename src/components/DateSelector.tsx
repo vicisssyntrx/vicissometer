@@ -65,13 +65,14 @@ export default function DateSelector({ date, onDateChange, editable = false, onE
               {formatDisplay(date)}
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 glass-strong border-white/10">
+          <PopoverContent className="w-auto p-0 glass border-white/10">
             <Calendar
               mode="single"
               selected={parseDate(date)}
               onSelect={(d) => {
                 if (!d) return;
                 onDateChange(toYmd(d));
+                setIsOpen(false);
               }}
               disabled={(d) => d > new Date()}
               initialFocus

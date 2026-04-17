@@ -50,7 +50,7 @@ export default function Auth() {
     <div className="relative min-h-screen flex items-center justify-center px-3 py-6 sm:px-4">
       <ParticleBackground />
       <div className="relative z-10 w-full max-w-md">
-        <div className="glass-strong rounded-2xl p-4 sm:p-6 md:p-8">
+        <div className="glass rounded-2xl p-4 sm:p-6 md:p-8">
           <h1 className="mb-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Vicissometer</h1>
           <p className="text-muted-foreground text-base mb-8">
             {isSignUp ? "Create your account" : "Welcome back"}

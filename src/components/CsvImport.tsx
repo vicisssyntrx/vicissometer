@@ -197,8 +197,8 @@ export default function CsvImport({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="glass-strong rounded-2xl p-6 w-full max-w-md">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+      <div className="glass rounded-2xl p-6 w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-foreground">📤 Import History</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>

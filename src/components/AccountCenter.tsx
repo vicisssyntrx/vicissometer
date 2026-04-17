@@ -230,7 +230,7 @@ export default function AccountCenter({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-3 sm:p-4">
       {resetting && <div className="fixed inset-0 z-[110]"><LoadingScreen message="Wiping account..." /></div>}
-      <div className="glass-strong rounded-2xl p-4 sm:p-5 w-full max-w-sm max-h-[92vh] overflow-y-auto z-10">
+      <div className="glass rounded-2xl p-4 sm:p-5 w-full max-w-sm max-h-[92vh] overflow-y-auto z-10">
         <div className="relative mb-3">
           <button onClick={onClose} disabled={resetting} className="absolute right-0 top-0"><X className="h-5 w-5 text-muted-foreground" /></button>
           <h1 className="text-2xl font-bold text-foreground text-center">Vicissometer</h1>
@@ -341,7 +341,7 @@ export default function AccountCenter({ onClose }: Props) {
       </div>
       
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-        <AlertDialogContent className="glass-strong border-destructive/30 max-w-sm">
+        <AlertDialogContent className="glass border-destructive/30 max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">Reset All Data?</AlertDialogTitle>
             <AlertDialogDescription className="text-foreground/80 space-y-4">

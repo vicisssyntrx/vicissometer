@@ -52,7 +52,7 @@ export default function OutcomeCards() {
   return (
     <div className="space-y-2">
       <h3 className="text-sm uppercase tracking-wider text-muted-foreground px-1">Becoming</h3>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2">
         {Array.from(outcomes.entries()).map(([name, o]) => {
           const ratio =
             o.habitPercents.length > 0

@@ -205,10 +205,10 @@ export default function Dashboard() {
 
           <div className="mt-12 mb-4 flex flex-col items-center justify-center opacity-70 transition-opacity hover:opacity-100">
             <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-              Made with <span className="text-red-500 opacity-100 hover:scale-110 transition-transform duration-300">❤️</span> by Viciss Syntrx
+              Made with <span className="text-red-500 opacity-100 hover:scale-110 transition-transform duration-300">❤️</span> by <a href="https://linktr.ee/vicisssyntrx" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">Viciss Syntrx</a>
             </p>
             <p className="text-[10px] text-muted-foreground/60 mt-1 tracking-widest font-mono uppercase">
-              Vicissometer 2.0 v0.0.2.6_4.17
+              Vicissometer v0.0.2.6_4.17
             </p>
           </div>
         </div>
