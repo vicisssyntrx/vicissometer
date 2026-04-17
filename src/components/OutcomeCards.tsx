@@ -62,10 +62,10 @@ export default function OutcomeCards() {
             <div key={name} className="glass flex flex-col justify-center rounded-xl p-3 md:p-4 h-full min-h-[72px]">
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="text-xl leading-none shrink-0">{o.emoji}</span>
-                <p className="font-semibold text-foreground text-sm sm:text-base truncate flex-1">{name}</p>
+                <p className="font-semibold text-foreground text-sm sm:text-base truncate flex-1 ml-1">{name}</p>
               </div>
               <div className="flex items-center gap-2.5">
-                <span className="text-sm font-bold text-primary shrink-0 leading-none min-w-[32px]">{ratio}%</span>
+                <span className="text-sm font-bold text-primary shrink-0 leading-none min-w-[32px] ml-1.5">{ratio}%</span>
                 <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden flex-shrink-0">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${ratio}%` }} />
                 </div>

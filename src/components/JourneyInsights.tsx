@@ -10,7 +10,7 @@ export default function JourneyInsights() {
 
   const formatGrowth = (value: number | undefined) => {
     if (value === undefined || Number.isNaN(value)) return "1x";
-    return Number(value.toFixed(4)).toString() + "x";
+    return Number(value.toFixed(2)).toString() + "x";
   };
 
   const totalDays = denseLogs.length || 0;
