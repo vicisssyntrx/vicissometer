@@ -51,7 +51,7 @@ export default function OutcomeCards() {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm uppercase tracking-wider text-muted-foreground px-1">Becoming</h3>
+      <h3 className="text-sm uppercase tracking-wider text-muted-foreground px-1">Outcomes</h3>
       <div className="grid grid-cols-2 gap-2">
         {Array.from(outcomes.entries()).map(([name, o]) => {
           const ratio =
@@ -59,17 +59,16 @@ export default function OutcomeCards() {
               ? Math.round(o.habitPercents.reduce((a, b) => a + b, 0) / o.habitPercents.length)
               : 0;
           return (
-            <div key={name} className="glass rounded-xl p-3 md:p-3.5">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">{o.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground text-base">{name}</p>
-                  <p className="text-xs text-muted-foreground">{o.habits.length} habit{o.habits.length > 1 ? "s" : ""}</p>
-                </div>
-                <span className="text-lg font-bold text-primary">{ratio}%</span>
+            <div key={name} className="glass rounded-xl p-2.5 md:p-3.5">
+              <div className="flex items-center gap-1.5 mb-2 overflow-hidden">
+                <span className="text-lg leading-none shrink-0">{o.emoji}</span>
+                <p className="font-medium text-foreground text-xs sm:text-sm truncate leading-tight mt-0.5">{name}</p>
               </div>
-              <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${ratio}%` }} />
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-bold text-primary shrink-0 leading-none min-w-[28px]">{ratio}%</span>
+                <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${ratio}%` }} />
+                </div>
               </div>
             </div>
           );
