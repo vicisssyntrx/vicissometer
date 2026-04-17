@@ -59,14 +59,14 @@ export default function OutcomeCards() {
               ? Math.round(o.habitPercents.reduce((a, b) => a + b, 0) / o.habitPercents.length)
               : 0;
           return (
-            <div key={name} className="glass rounded-xl p-2.5 md:p-3.5">
-              <div className="flex items-center gap-1.5 mb-2 overflow-hidden">
-                <span className="text-lg leading-none shrink-0">{o.emoji}</span>
-                <p className="font-medium text-foreground text-xs sm:text-sm truncate leading-tight mt-0.5">{name}</p>
+            <div key={name} className="glass flex flex-col justify-center rounded-xl p-3 md:p-4 h-full min-h-[72px]">
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-xl leading-none shrink-0">{o.emoji}</span>
+                <p className="font-semibold text-foreground text-sm sm:text-base truncate flex-1">{name}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-primary shrink-0 leading-none min-w-[28px]">{ratio}%</span>
-                <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm font-bold text-primary shrink-0 leading-none min-w-[32px]">{ratio}%</span>
+                <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden flex-shrink-0">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${ratio}%` }} />
                 </div>
               </div>
