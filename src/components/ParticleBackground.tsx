@@ -27,8 +27,8 @@ export default function ParticleBackground() {
       stars.push({
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
+        vx: (Math.random() - 0.5) * 0.1,
+        vy: (Math.random() - 0.5) * 0.1,
         r: Math.random() * 1.2 + 0.3,
         o: Math.random() * 0.5 + 0.4,
       });
