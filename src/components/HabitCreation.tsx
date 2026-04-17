@@ -14,6 +14,7 @@ export default function HabitCreation() {
   const createHabit = useCreateHabit();
 
   const handleCreate = async () => {
+    if (createHabit.isPending) return;
     if (!name.trim()) { toast.error("Habit name is required"); return; }
     try {
       await createHabit.mutateAsync({
@@ -29,18 +30,25 @@ export default function HabitCreation() {
       toast.success("Habit created!");
       setOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to create habit";
+      const msg =
+        (err as { message?: string })?.message ||
+        JSON.stringify(err) ||
+        "Failed to create habit";
       toast.error(msg);
+      console.error("Create habit error:", err);
     }
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleCreate();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void handleCreate();
+    }
   };
 
   return (
     <div className="glass rounded-xl overflow-hidden">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
+      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
         <span className="flex items-center gap-2 text-foreground font-medium text-base">
           <Plus className="h-5 w-5 text-primary" /> Add Habit
         </span>
@@ -56,7 +64,7 @@ export default function HabitCreation() {
             <Input value={outcomeEmoji} onChange={(e) => setOutcomeEmoji(e.target.value)} placeholder="Emoji" className="bg-secondary border-border w-16 text-center text-xl h-11" maxLength={4} onKeyDown={onKeyDown} />
             <Input placeholder="Outcome (e.g. Thinker)" value={outcomeName} onChange={(e) => setOutcomeName(e.target.value)} className="bg-secondary border-border flex-1 h-11 text-base" onKeyDown={onKeyDown} />
           </div>
-          <Button onClick={handleCreate} disabled={createHabit.isPending} className="w-full bg-primary text-primary-foreground h-11 text-base">
+          <Button type="button" onClick={handleCreate} disabled={createHabit.isPending} className="w-full bg-primary text-primary-foreground h-11 text-base">
             {createHabit.isPending ? "Creating..." : "Create Habit"}
           </Button>
         </div>

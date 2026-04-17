@@ -1,4 +1,4 @@
-import { useDailyLogs } from "@/hooks/useDailyLogs";
+import { useDailyLogs, getDenseLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useMemo, useState } from "react";
@@ -15,11 +15,11 @@ import {
 } from "date-fns";
 
 export default function GrowthGraph() {
-  const { data: logs } = useDailyLogs();
+  const { data: rawLogs } = useDailyLogs();
   const { data: stats } = useUserStats();
   const [range, setRange] = useState<"week" | "month" | "all">("all");
 
-  const safeLogs = useMemo(() => logs ?? [], [logs]);
+  const safeLogs = useMemo(() => getDenseLogs(rawLogs, stats?.start_date) ?? [], [rawLogs, stats?.start_date]);
 
   const firstValidLog = useMemo(() => safeLogs.find((log) => isValid(parseISO(log.date))), [safeLogs]);
   const statsStart = useMemo(() => (stats?.start_date ? parseISO(stats.start_date) : null), [stats?.start_date]);
@@ -79,7 +79,7 @@ export default function GrowthGraph() {
     let actual = 1.0;
     return sorted.map((l) => {
       const dayNum = differenceInDays(l._d, programStart);
-      const idealGrowth = Math.pow(1.01, Math.max(0, dayNum));
+      const idealGrowth = Math.pow(1.01, Math.max(0, dayNum) + 1);
 
       // Some flows may mark recovered gaps with negative completed_count; treat as full completion.
       const effectiveCompleted = l.completed_count < 0 ? l.total_count : l.completed_count;

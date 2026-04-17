@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { X, LogOut, Upload, Shield, Zap, RotateCcw, Bell, User, Calendar, Download } from "lucide-react";
@@ -17,6 +17,8 @@ import CsvImport from "./CsvImport";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { getInstallLabel, isMobileDevice, isRunningStandalone } from "@/lib/pwa";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import LoadingScreen from "./LoadingScreen";
 
 interface Props { onClose: () => void; }
 
@@ -33,6 +35,8 @@ export default function AccountCenter({ onClose }: Props) {
     typeof window !== "undefined" && "Notification" in window ? Notification.permission === "granted" : false
   );
   const [resetting, setResetting] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetToken, setResetToken] = useState("");
   const [installing, setInstalling] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const installLabel = useMemo(() => getInstallLabel(), []);
@@ -140,15 +144,18 @@ export default function AccountCenter({ onClose }: Props) {
     }
   };
 
-  const handleResetDefaults = async () => {
+  const handleResetDefaults = () => {
+    setResetToken("");
+    setShowResetDialog(true);
+  };
+  
+  const confirmResetData = async () => {
     if (!user) return;
-    const confirmed = window.confirm("This will delete ALL your data (habits, history, stats) and start fresh. Are you sure?");
-    if (!confirmed) return;
-    const token = window.prompt('Type "RESET" to confirm permanent data deletion');
-    if (token !== "RESET") {
-      toast.info("Reset cancelled");
+    if (resetToken.toUpperCase() !== "RESET") {
+      toast.error("You must type RESET to confirm data deletion.");
       return;
     }
+    setShowResetDialog(false);
     setResetting(true);
     const { error: logDeleteError } = await supabase.from("daily_logs").delete().eq("user_id", user.id);
     if (logDeleteError) {
@@ -170,7 +177,9 @@ export default function AccountCenter({ onClose }: Props) {
       setResetting(false);
       return;
     }
-    qc.invalidateQueries();
+    qc.invalidateQueries({ queryKey: ["daily_logs"] });
+    qc.invalidateQueries({ queryKey: ["habits"] });
+    qc.invalidateQueries({ queryKey: ["user_stats"] });
     toast.success("All data reset to defaults!");
     setResetting(false);
     onClose();
@@ -219,10 +228,11 @@ export default function AccountCenter({ onClose }: Props) {
   const initial = currentDisplayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "?";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-3 sm:p-4">
-      <div className="glass-strong rounded-2xl p-4 sm:p-5 w-full max-w-sm max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-3 sm:p-4">
+      {resetting && <div className="fixed inset-0 z-[110]"><LoadingScreen message="Wiping account..." /></div>}
+      <div className="glass-strong rounded-2xl p-4 sm:p-5 w-full max-w-sm max-h-[92vh] overflow-y-auto z-10">
         <div className="relative mb-3">
-          <button onClick={onClose} className="absolute right-0 top-0"><X className="h-5 w-5 text-muted-foreground" /></button>
+          <button onClick={onClose} disabled={resetting} className="absolute right-0 top-0"><X className="h-5 w-5 text-muted-foreground" /></button>
           <h1 className="text-2xl font-bold text-foreground text-center">Vicissometer</h1>
           <h2 className="text-xl font-bold text-foreground text-center">Account Centre</h2>
         </div>
@@ -324,11 +334,43 @@ export default function AccountCenter({ onClose }: Props) {
             <RotateCcw className="h-5 w-5" /> {resetting ? "Resetting..." : "Reset All Data"}
           </button>
 
-          <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start text-destructive hover:text-destructive text-base h-10">
+          <Button onClick={handleSignOut} variant="ghost" disabled={resetting} className="w-full justify-start text-destructive hover:text-destructive text-base h-10">
             <LogOut className="h-5 w-5 mr-3" /> Sign Out
           </Button>
         </div>
       </div>
+      
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent className="glass-strong border-destructive/30 max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Reset All Data?</AlertDialogTitle>
+            <AlertDialogDescription className="text-foreground/80 space-y-4">
+              <p>This action is <strong>irreversible</strong> and will permanently wipe all your habits, stats, streaks, and historical data from the server.</p>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1 block">Type RESET to confirm</label>
+                <Input
+                  value={resetToken}
+                  onChange={(e) => setResetToken(e.target.value)}
+                  placeholder="RESET"
+                  className="bg-secondary/50 border-destructive/50 focus-visible:ring-destructive uppercase"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-between items-center w-full sm:flex-row mt-4">
+            <AlertDialogCancel className="mt-0 w-full sm:w-auto h-10 bg-secondary border-none hover:bg-secondary/80">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+                onClick={(e) => { 
+                    e.preventDefault(); 
+                    confirmResetData(); 
+                }} 
+                className="w-full sm:w-auto mt-2 sm:mt-0 h-10 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+                Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

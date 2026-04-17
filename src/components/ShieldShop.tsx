@@ -1,11 +1,12 @@
 import { useUserStats } from "@/hooks/useUserStats";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import StreakWindow from "./StreakWindow";
 
 const SHOP_OPTIONS = [
@@ -37,49 +38,8 @@ export default function ShieldShop({ onClose }: Props) {
     toast.success(`Bought ${shields} shield${shields > 1 ? "s" : ""}!`);
   };
 
-  const addTestCoins = async () => {
-    if (!user) return;
-    const { data: current, error: loadError } = await supabase
-      .from("user_stats")
-      .select("coins, streak, shields, power_ups, current_growth, start_date")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (loadError) {
-      toast.error(loadError.message);
-      return;
-    }
-
-    if (current) {
-      const { error } = await supabase
-        .from("user_stats")
-        .update({ coins: (current.coins ?? 0) + 100 })
-        .eq("user_id", user.id);
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-    } else {
-      const { error } = await supabase
-        .from("user_stats")
-        .insert({
-          user_id: user.id,
-          coins: 100,
-          streak: 0,
-          shields: 0,
-          power_ups: 0,
-          current_growth: 1,
-        });
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-    }
-    qc.invalidateQueries({ queryKey: ["user_stats"] });
-    toast.success("Added 100 coins for testing");
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
       <div className="glass-strong rounded-2xl p-6 w-full max-w-sm">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-foreground">🛡️ Shield Shop</h2>
@@ -106,14 +66,12 @@ export default function ShieldShop({ onClose }: Props) {
             );
           })}
         </div>
-        <Button type="button" variant="secondary" onClick={addTestCoins} className="w-full mt-3">
-          Add 100 coins (testing)
-        </Button>
         <Button type="button" variant="secondary" onClick={() => setShowStreak(true)} className="w-full mt-3">
           Open Streak Calendar
         </Button>
       </div>
       {showStreak && <StreakWindow onClose={() => setShowStreak(false)} />}
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -14,11 +14,14 @@ export default function SaveProgressButton({ onSave, locked, disabled }: Props) 
 
   const handle = async () => {
     setSaving(true);
-    const result = await onSave();
-    setSaving(false);
-    if (result) {
-      setPulsing(true);
-      setTimeout(() => setPulsing(false), 1500);
+    try {
+      const result = await onSave();
+      if (result) {
+        setPulsing(true);
+        setTimeout(() => setPulsing(false), 1500);
+      }
+    } finally {
+      setSaving(false);
     }
   };
 

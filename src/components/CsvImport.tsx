@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { X, Upload } from "lucide-react";
@@ -107,52 +107,83 @@ export default function CsvImport({ onClose }: Props) {
     if (!preview || !user) return;
     setImporting(true);
 
-    // No coins/shields from import — just growth + streak
-    let growth = 1.0;
-    let streak = 0;
+    // 1. First, dump the raw parsed CSV rows into daily_logs
+    const skeletonLogsBase = preview.map((row) => ({
+      user_id: user.id,
+      date: row.date,
+      completed_habits: [] as string[],
+      completed_count: row.completed ? 1 : 0,
+      total_count: 1,
+      shield_used: false,
+      streak_after: 0,
+      growth_before: 1.0,
+      growth_after: 1.0,
+      locked: true,
+    }));
 
-    const logsToInsert = preview.map((row) => {
-      const prevGrowth = growth;
-      if (row.completed) {
-        growth *= 1.01;
-        streak += 1;
-      } else {
-        streak = 0;
-      }
-      return {
-        user_id: user.id,
-        date: row.date,
-        completed_habits: [] as string[],
-        completed_count: row.completed ? 1 : 0,
-        total_count: 1,
-        shield_used: false,
-        streak_after: streak,
-        growth_before: prevGrowth,
-        growth_after: growth,
-        locked: true,
-      };
-    });
-
-    const { error } = await supabase.from("daily_logs").upsert(logsToInsert, { onConflict: "user_id,date" });
-    if (error) {
-      toast.error("Import failed: " + error.message);
+    const { error: insertErr } = await supabase.from("daily_logs").upsert(skeletonLogsBase, { onConflict: "user_id,date" });
+    if (insertErr) {
+      toast.error("Failed to import CSV logs: " + insertErr.message);
       setImporting(false);
       return;
     }
 
-    // Ensure user_stats exists and update growth/streak atomically for import.
+    // 2. Download the ENTIRE universal master history of all logs and dynamically regenerate exact compounding stats.
+    const { data: allLogs, error: fetchErr } = await supabase
+      .from("daily_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("date", { ascending: true });
+
+    if (fetchErr || !allLogs) {
+      toast.error("Failed to sync historical mathematics.");
+      setImporting(false);
+      return;
+    }
+
+    let runningGrowth = 1.0;
+    let runningStreak = 0;
+    const finalUpdatePayloads = [];
+
+    // Rigorously recount every single day from the dawn of the timeline.
+    for (const log of allLogs) {
+      const prevGrowth = runningGrowth;
+      let dayWasCompletedOrShielded = false;
+
+      if (log.completed_count !== null && log.total_count !== null && log.total_count > 0 && log.completed_count === log.total_count) {
+        runningGrowth *= 1.01;
+        runningStreak += 1;
+        dayWasCompletedOrShielded = true;
+      } else if (log.shield_used) {
+        dayWasCompletedOrShielded = true;
+      }
+
+      if (!dayWasCompletedOrShielded) {
+        runningStreak = 0;
+      }
+
+      finalUpdatePayloads.push({
+        ...log,
+        growth_before: prevGrowth,
+        growth_after: runningGrowth,
+        streak_after: runningStreak
+      });
+    }
+
+    // Push the corrected mathematical history strictly back to the DB to fix any chronological paradoxes.
+    await supabase.from("daily_logs").upsert(finalUpdatePayloads, { onConflict: "user_id,date" });
+
+    // 3. Atomically overwrite User Stats with the final pristine numbers.
     const { error: statsErr } = await supabase
       .from("user_stats")
-      .upsert(
-        {
-          user_id: user.id,
-          current_growth: growth,
-          streak,
-        },
-        { onConflict: "user_id" }
-      );
+      .update({
+        current_growth: runningGrowth,
+        streak: runningStreak,
+      })
+      .eq("user_id", user.id);
+
     if (statsErr) {
-      toast.error("Import saved logs, but failed to update stats: " + statsErr.message);
+      toast.error("Failed final sync line: " + statsErr.message);
       setImporting(false);
       return;
     }

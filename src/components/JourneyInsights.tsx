@@ -1,25 +1,27 @@
-import { useDailyLogs } from "@/hooks/useDailyLogs";
+import { useDailyLogs, getDenseLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
 
 export default function JourneyInsights() {
   const { data: logs } = useDailyLogs();
   const { data: stats } = useUserStats();
+  
+  const denseLogs = getDenseLogs(logs, stats?.start_date);
 
   const formatGrowth = (value: number | undefined) => {
-    if (value === undefined || Number.isNaN(value)) return "1";
-    return Number(value.toFixed(4)).toString();
+    if (value === undefined || Number.isNaN(value)) return "1x";
+    return Number(value.toFixed(4)).toString() + "x";
   };
 
-  const totalDays = logs?.length || 0;
-  const missedDays = logs?.filter((l) => l.completed_count === 0 && !l.shield_used).length || 0;
-  const completedDays = logs?.filter((l) => l.completed_count === l.total_count && l.total_count > 0).length || 0;
+  const totalDays = denseLogs.length || 0;
+  const missedDays = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used).length || 0;
+  const completedDays = denseLogs.filter((l) => l.completed_count === l.total_count && l.total_count > 0).length || 0;
   const completionRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
   const items = [
-    { label: "Current Growth", value: formatGrowth(stats?.current_growth) },
-    { label: "Days Tracked", value: totalDays },
-    { label: "Missed Days", value: missedDays },
-    { label: "Completion Rate", value: `${completionRate}%` },
+    { label: "Current Growth", value: formatGrowth(stats?.current_growth), colorClass: "text-[#fbbf24] drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" },
+    { label: "Completed Days", value: completedDays, colorClass: "text-[#4ade80]" },
+    { label: "Missed Days", value: missedDays, colorClass: "text-[#f87171]" },
+    { label: "Completion Rate", value: `${completionRate}%`, colorClass: "text-foreground" },
   ];
 
   return (
@@ -28,8 +30,8 @@ export default function JourneyInsights() {
       <div className="grid grid-cols-4 gap-2">
         {items.map((item) => (
           <div key={item.label} className="text-center">
-            <p className="text-sm md:text-lg font-bold text-foreground">{item.value}</p>
-            <p className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-wider leading-tight">{item.label}</p>
+            <p className={`text-sm md:text-lg font-bold ${item.colorClass}`}>{item.value}</p>
+            <p className="text-[8px] md:text-[10px] text-muted-foreground uppercase tracking-wider leading-tight mt-0.5">{item.label}</p>
           </div>
         ))}
       </div>

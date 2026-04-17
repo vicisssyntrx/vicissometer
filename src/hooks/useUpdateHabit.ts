@@ -13,6 +13,6 @@ export function useUpdateHabit() {
       }).eq("id", habit.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["habits"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["habits"], exact: false }),
   });
 }

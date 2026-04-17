@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { Navigate } from "react-router-dom";
 import ParticleBackground from "@/components/ParticleBackground";
 import LightLeakBackground from "@/components/LightLeakBackground";
@@ -11,6 +11,7 @@ import GrowthGraph from "@/components/GrowthGraph";
 import JourneyInsights from "@/components/JourneyInsights";
 import BottomActionBar from "@/components/BottomActionBar";
 import MobileBoostCards from "@/components/MobileBoostCards";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useHabits } from "@/hooks/useHabits";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTodayLog } from "@/hooks/useDailyLogs";
@@ -19,13 +20,33 @@ import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
-  const { data: habits } = useHabits();
+  const { data: habits, isLoading: habitsLoading } = useHabits();
   const { data: stats, isLoading: statsLoading, error: statsError } = useUserStats();
   const { data: todayLog, isLoading: todayLogLoading } = useTodayLog();
-  const { saveProgress } = useSaveProgress();
+  const { saveProgress, resetProgress } = useSaveProgress();
+  const [isResetting, setIsResetting] = useState(false);
+
+  // Show a full-screen loader while the first data fetch is in flight.
+  // Safety: a 6-second timeout ensures we never get permanently stuck.
+  const queriesLoading = habitsLoading || statsLoading;
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    if (!queriesLoading) return;
+    const t = setTimeout(() => setTimedOut(true), 6000);
+    return () => clearTimeout(t);
+  }, [queriesLoading]);
+  const isInitialLoad = queriesLoading && !timedOut;
 
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [hasLocalEdits, setHasLocalEdits] = useState(false);
+  
+  // A day is only locked if the DB says it's locked AND the total amount of habits hasn't changed
+  // AND the user hasn't toggled any existing checkboxes locally.
+  const completedHabitsArr = (todayLog?.completed_habits || []) as string[];
+  const completedIdsMatch = completedIds.size === completedHabitsArr.length && 
+    completedHabitsArr.every((id: string) => completedIds.has(id));
+
+  const isTodayLocked = !!todayLog?.locked && habits?.length === todayLog?.total_count && completedIdsMatch;
 
   // Seed local checkbox state from today's log unless user has started editing.
   useEffect(() => {
@@ -68,25 +89,43 @@ export default function Dashboard() {
   };
 
   const handleSave = async () => {
+    if (isTodayLocked) {
+      toast.info("Today's progress is already saved.");
+      return;
+    }
     if (todayLogLoading) {
       toast.info("Please wait, checking today's status...");
+      return;
+    }
+    if (statsLoading) {
+      toast.info("Please wait, loading stats...");
       return;
     }
     if (!habits || !stats) {
       toast.error("Stats are still loading. Try again.");
       return;
     }
-    return saveProgress(habits, completedIds, stats);
+    return saveProgress(habits, completedIds, stats, todayLog);
   };
 
-  const handleReset = () => {
-    setCompletedIds(new Set());
-    setHasLocalEdits(true);
-    toast.success("Today's progress cleared");
+  const handleReset = async () => {
+    if (!stats || !user) return;
+    setIsResetting(true);
+    try {
+      const success = await resetProgress(stats, todayLog);
+      if (success) {
+        setCompletedIds(new Set());
+        setHasLocalEdits(true);
+      }
+    } finally {
+      setIsResetting(false);
+    }
   };
 
-  if (loading) return <div className="min-h-screen bg-background" />;
+  if (loading) return <LoadingScreen message="Restoring your session…" />;
   if (!user) return <Navigate to="/auth" replace />;
+  if (isInitialLoad) return <LoadingScreen />;
+  if (isResetting) return <LoadingScreen message="Resetting today's progress..." />;
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -110,7 +149,7 @@ export default function Dashboard() {
                 <BottomActionBar
                   onSave={handleSave}
                   onReset={handleReset}
-                  disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError}
+                  disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError || isTodayLocked}
                   hasHabits={!!habits?.length}
                 />
               </div>
@@ -141,7 +180,7 @@ export default function Dashboard() {
                 <BottomActionBar
                   onSave={handleSave}
                   onReset={handleReset}
-                  disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError}
+                  disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError || isTodayLocked}
                   hasHabits={!!habits?.length}
                 />
               </div>
@@ -162,6 +201,15 @@ export default function Dashboard() {
                 <MobileBoostCards />
               </div>
             </div>
+          </div>
+
+          <div className="mt-12 mb-4 flex flex-col items-center justify-center opacity-70 transition-opacity hover:opacity-100">
+            <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              Made with <span className="text-red-500 opacity-100 hover:scale-110 transition-transform duration-300">❤️</span> by Viciss Syntrx
+            </p>
+            <p className="text-[10px] text-muted-foreground/60 mt-1 tracking-widest font-mono uppercase">
+              Vicissometer 2.0 v0.0.2.6_4.17
+            </p>
           </div>
         </div>
       </div>

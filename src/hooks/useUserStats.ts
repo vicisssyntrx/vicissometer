@@ -1,6 +1,6 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 
 export interface UserStats {
   id: string;
@@ -20,28 +20,32 @@ export function useUserStats() {
   return useQuery({
     queryKey: ["user_stats", user?.id],
     queryFn: async () => {
+      if (!user?.id) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("user_stats")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (error) throw error;
       if (data) return data as UserStats;
 
+      // Row doesn't exist yet — create it (upsert handles race conditions)
       const { data: created, error: createError } = await supabase
         .from("user_stats")
-        .insert({ user_id: user!.id })
+        .upsert({ user_id: user.id }, { onConflict: "user_id" })
         .select("*")
-        .single();
+        .maybeSingle();
       if (createError) throw createError;
+      if (!created) throw new Error("Failed to create user stats");
       return created as UserStats;
     },
-    enabled: !!user,
+    enabled: !!user?.id,
   });
 }
 
 export function useRefreshStats() {
   const qc = useQueryClient();
-  return () => qc.invalidateQueries({ queryKey: ["user_stats"] });
+  return () => qc.invalidateQueries({ queryKey: ["user_stats"], exact: false });
 }

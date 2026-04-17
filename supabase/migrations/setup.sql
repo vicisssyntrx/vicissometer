@@ -120,6 +120,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_user_id UUID := auth.uid();
+  v_existing_locked BOOLEAN := false;
 BEGIN
   IF v_user_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'message', 'Not authenticated');
@@ -128,6 +129,24 @@ BEGIN
   INSERT INTO public.user_stats (user_id)
   VALUES (v_user_id)
   ON CONFLICT (user_id) DO NOTHING;
+
+  SELECT locked
+  INTO v_existing_locked
+  FROM public.daily_logs
+  WHERE user_id = v_user_id AND date = p_date
+  FOR UPDATE;
+
+  -- If the day is already locked, allow updating the log contents without re-awarding rewards.
+  IF COALESCE(v_existing_locked, false) THEN
+    UPDATE public.daily_logs
+    SET completed_habits = p_completed_habits,
+        completed_count = p_completed_count,
+        total_count = p_total_count,
+        shield_used = p_shield_used
+    WHERE user_id = v_user_id AND date = p_date;
+
+    RETURN jsonb_build_object('success', true, 'message', 'Updated');
+  END IF;
 
   INSERT INTO public.daily_logs (
     user_id,

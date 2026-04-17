@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
+import { todayYmdLocal } from "@/lib/date";
 
 interface Props { onClose: () => void; }
 
@@ -10,7 +11,7 @@ export default function NotificationPanel({ onClose }: Props) {
 
   const notifications: { icon: string; message: string }[] = [];
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayYmdLocal();
   const todayLog = logs?.find((l) => l.date === today);
   if (!todayLog) {
     notifications.push({ icon: "📋", message: "Don't forget to track your habits today!" });

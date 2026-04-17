@@ -18,11 +18,14 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
 
   const handleSave = async () => {
     setSaving(true);
-    const result = await onSave();
-    setSaving(false);
-    if (result) {
-      setPulsing(true);
-      setTimeout(() => setPulsing(false), 1500);
+    try {
+      const result = await onSave();
+      if (result) {
+        setPulsing(true);
+        setTimeout(() => setPulsing(false), 1500);
+      }
+    } finally {
+      setSaving(false);
     }
   };
 

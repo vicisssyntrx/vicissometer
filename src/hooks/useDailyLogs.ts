@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import type { Json } from "@/integrations/supabase/types";
 import { todayYmdLocal } from "@/lib/date";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
 
 export interface DailyLog {
   id: string;
@@ -29,6 +30,43 @@ function normalizeLog(log: Omit<DailyLog, "completed_habits"> & { completed_habi
     ...log,
     completed_habits: normalizeCompletedHabits(log.completed_habits),
   };
+}
+
+export function getDenseLogs(logs: DailyLog[] | undefined | null, startDateStr?: string): DailyLog[] {
+  if (!logs || logs.length === 0) return [];
+  const logMap = new Map(logs.map(l => [l.date, l]));
+  const earliestDate = startDateStr || logs[0].date;
+  const dense: DailyLog[] = [];
+  
+  try {
+    const start = parseISO(earliestDate);
+    const end = parseISO(todayYmdLocal());
+    if (start <= end) {
+      eachDayOfInterval({ start, end }).forEach(d => {
+        const dStr = format(d, "yyyy-MM-dd");
+        if (logMap.has(dStr)) {
+          dense.push(logMap.get(dStr)!);
+        } else {
+          dense.push({
+            id: `synthetic-${dStr}`,
+            user_id: logs[0].user_id,
+            date: dStr,
+            completed_habits: [],
+            completed_count: 0,
+            total_count: 1,
+            shield_used: false,
+            streak_after: 0,
+            growth_before: 1.0,
+            growth_after: 1.0,
+            locked: true,
+            created_at: new Date().toISOString()
+          });
+        }
+      });
+    }
+  } catch(e) {}
+  
+  return dense;
 }
 
 export function useDailyLogs() {
@@ -88,8 +126,8 @@ export function useLogForDate(date: string) {
 export function useRefreshLogs() {
   const qc = useQueryClient();
   return () => {
-    qc.invalidateQueries({ queryKey: ["daily_logs"] });
-    qc.invalidateQueries({ queryKey: ["daily_log_today"] });
-    qc.invalidateQueries({ queryKey: ["daily_log_date"] });
+    qc.invalidateQueries({ queryKey: ["daily_logs"], exact: false });
+    qc.invalidateQueries({ queryKey: ["daily_log_today"], exact: false });
+    qc.invalidateQueries({ queryKey: ["daily_log_date"], exact: false });
   };
 }

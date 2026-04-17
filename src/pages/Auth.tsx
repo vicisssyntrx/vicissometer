@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ export default function Auth() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Your name"
+                  autoComplete="name"
                   className="bg-secondary border-border"
                 />
               </div>
@@ -78,6 +79,7 @@ export default function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                autoComplete="email"
                 className="bg-secondary border-border"
               />
             </div>
@@ -91,6 +93,7 @@ export default function Auth() {
                 placeholder="••••••••"
                 required
                 minLength={6}
+                autoComplete={isSignUp ? "new-password" : "current-password"}
                 className="bg-secondary border-border"
               />
             </div>
