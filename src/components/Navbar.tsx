@@ -59,12 +59,12 @@ export default function Navbar() {
               <h1 className="hidden sm:block text-lg sm:text-xl font-bold tracking-tight text-foreground mr-3">
                 Vicissometer
               </h1>
-              <div className="flex items-center gap-1">
-                <span className="glass rounded-full px-2 py-0.5 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">🪙 {stats?.coins ?? 0}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="glass rounded-full px-3.5 py-1.5 text-base sm:text-lg font-semibold text-foreground whitespace-nowrap">🪙 {stats?.coins ?? 0}</span>
                 <button
                   type="button"
                   onClick={() => setShowStreak(true)}
-                  className="glass rounded-full px-2 py-0.5 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap hover:bg-secondary/60 transition-colors"
+                  className="glass rounded-full px-3.5 py-1.5 text-base sm:text-lg font-semibold text-foreground whitespace-nowrap hover:bg-secondary/60 transition-colors"
                 >
                   🔥 {currentStreak}
                 </button>
