@@ -41,10 +41,10 @@ export default function NotificationPanel({ onClose }: Props) {
   }
 
   return (
-    <div className="absolute right-2 md:right-4 top-12 z-30 glass rounded-xl p-3 w-72 md:w-80 shadow-2xl">
+    <div className="absolute right-2 md:right-4 top-full mt-2 z-30 glass rounded-xl p-3 w-72 md:w-80 shadow-2xl">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-foreground">Notifications</h3>
-        <button onClick={onClose}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>
+        <button onClick={onClose} className="popup-close"><X className="h-3.5 w-3.5" /></button>
       </div>
       <div className="space-y-1.5">
         {notifications.map((n, i) => (

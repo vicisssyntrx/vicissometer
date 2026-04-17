@@ -1,4 +1,4 @@
-﻿import { useAuth } from "@/contexts/useAuth";
+import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -61,8 +61,8 @@ export default function Greeting() {
   }, [fullGreeting]);
 
   return (
-    <div className="px-3 sm:px-5 pt-3 pb-2">
-      <div className="mx-auto w-full max-w-[1060px]">
+    <div className="px-5 sm:px-6 pt-6 pb-4">
+      <div className="mx-auto w-full max-w-[860px]">
         <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">{typedGreeting}</h2>
         <p className="text-base md:text-lg text-muted-foreground mt-0.5">{message}</p>
       </div>

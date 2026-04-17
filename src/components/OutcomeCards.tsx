@@ -20,17 +20,17 @@ export default function OutcomeCards() {
 
     if (!grouped.size) return grouped;
 
-    // Build lookup maps per habit to avoid under-reporting due to fixed 365-day divisor.
+    // Build completed-days count per habit.
+    // 100% = 365 completed days (one full year of identity-building).
+    // Habits added mid-program are capped at their accumulated completions / 365.
     const completedDaysByHabit = new Map<string, number>();
-    const possibleDaysByHabit = new Map<string, number>();
     if (logs) {
       for (const log of logs) {
+        const completedSet = new Set(log.completed_habits);
         for (const h of safeHabits) {
-          const createdDate = h.created_at.slice(0, 10);
-          if (log.date < createdDate) continue;
-          possibleDaysByHabit.set(h.id, (possibleDaysByHabit.get(h.id) ?? 0) + 1);
-          const completedSet = new Set(log.completed_habits);
           if (!completedSet.has(h.id)) continue;
+          // Only count days on or after the habit was created
+          if (log.date < h.created_at.slice(0, 10)) continue;
           completedDaysByHabit.set(h.id, (completedDaysByHabit.get(h.id) ?? 0) + 1);
         }
       }
@@ -38,9 +38,9 @@ export default function OutcomeCards() {
 
     for (const [, outcome] of grouped) {
       for (const h of outcome.habits) {
-        const possibleDays = possibleDaysByHabit.get(h.id) ?? 0;
         const completedDays = completedDaysByHabit.get(h.id) ?? 0;
-        const pct = possibleDays > 0 ? Math.min(100, (completedDays / possibleDays) * 100) : 0;
+        // 365 is the fixed denominator — identity is built over a full year
+        const pct = Math.min(100, Math.round((completedDays / 365) * 100));
         outcome.habitPercents.push(pct);
       }
     }
@@ -71,7 +71,6 @@ export default function OutcomeCards() {
               <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
                 <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${ratio}%` }} />
               </div>
-              <p className="text-xs text-muted-foreground mt-2 italic">You are becoming a {name}</p>
             </div>
           );
         })}

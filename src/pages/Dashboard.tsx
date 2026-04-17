@@ -131,13 +131,13 @@ export default function Dashboard() {
     <div className="relative min-h-screen bg-background">
       <LightLeakBackground />
       <ParticleBackground />
-      <div className="relative z-10 flex flex-col min-h-screen pt-16 sm:pt-18 md:pt-20">
+      <div className="relative z-10 flex flex-col min-h-screen pt-20 sm:pt-22 md:pt-24">
         <Navbar />
 
         <Greeting />
 
-        <div className="flex-1 px-3 sm:px-5 pb-4 md:pb-6">
-          <div className="mx-auto w-full max-w-[1060px] md:grid md:grid-cols-2 md:gap-4">
+        <div className="flex-1 px-5 sm:px-6 pb-4 md:pb-6 mt-2">
+          <div className="mx-auto w-full max-w-[860px] md:grid md:grid-cols-2 md:gap-4">
             {/* Mobile flow */}
             <div className="space-y-3 md:hidden">
               <HabitList
@@ -167,39 +167,27 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Desktop left column */}
+            {/* Desktop left column — Habits + Actions + Shields/Power-Ups */}
             <div className="hidden md:block space-y-2">
-              <div className="dashboard-rise rise-delay-1">
-                <HabitList
-                  completedIds={completedIds}
-                  onToggle={toggleHabit}
-                  viewOnly={false}
-                />
-              </div>
-              <div className="dashboard-rise rise-delay-2">
-                <BottomActionBar
-                  onSave={handleSave}
-                  onReset={handleReset}
-                  disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError || isTodayLocked}
-                  hasHabits={!!habits?.length}
-                />
-              </div>
-              <div className="dashboard-rise rise-delay-3">
-                <OutcomeCards />
-              </div>
+              <HabitList
+                completedIds={completedIds}
+                onToggle={toggleHabit}
+                viewOnly={false}
+              />
+              <BottomActionBar
+                onSave={handleSave}
+                onReset={handleReset}
+                disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError || isTodayLocked}
+                hasHabits={!!habits?.length}
+              />
+              <MobileBoostCards />
             </div>
 
-            {/* Desktop right column */}
+            {/* Desktop right column — Growth + Insights + Becoming */}
             <div className="hidden md:block space-y-2">
-              <div className="dashboard-rise rise-delay-2">
-                <GrowthGraph />
-              </div>
-              <div className="dashboard-rise rise-delay-3">
-                <JourneyInsights />
-              </div>
-              <div className="dashboard-rise rise-delay-4">
-                <MobileBoostCards />
-              </div>
+              <GrowthGraph />
+              <JourneyInsights />
+              <OutcomeCards />
             </div>
           </div>
 
@@ -208,7 +196,7 @@ export default function Dashboard() {
               Made with <span className="text-red-500 opacity-100 hover:scale-110 transition-transform duration-300">❤️</span> by <a href="https://linktr.ee/vicisssyntrx" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">Viciss Syntrx</a>
             </p>
             <p className="text-[10px] text-muted-foreground/60 mt-1 tracking-widest font-mono uppercase">
-              Vicissometer v0.0.2.6_4.17
+              Vicissometer v0.0.2.6_4.18
             </p>
           </div>
         </div>

@@ -24,10 +24,10 @@ export default function StreakWindow({ onClose }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="rounded-2xl p-3 sm:p-4 w-full max-w-[95vw] sm:max-w-lg max-h-[88vh] overflow-y-auto bg-background border border-border">
+      <div className="glass rounded-2xl p-3 sm:p-4 w-full max-w-[95vw] sm:max-w-lg max-h-[88vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold text-foreground">🔥 Streak Calendar</h2>
-          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
+          <button onClick={onClose} className="popup-close"><X className="h-4 w-4" /></button>
         </div>
 
         <p className="text-sm text-muted-foreground mb-3">

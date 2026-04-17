@@ -103,8 +103,8 @@ export default function AccountCenter({ onClose }: Props) {
       toast.error("Please select an image file");
       return;
     }
-    if (file.size > 1024 * 1024) {
-      toast.error("Image must be less than 1 MB");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5 MB");
       return;
     }
 
@@ -232,7 +232,7 @@ export default function AccountCenter({ onClose }: Props) {
       {resetting && <div className="fixed inset-0 z-[110]"><LoadingScreen message="Wiping account..." /></div>}
       <div className="glass rounded-2xl p-4 sm:p-5 w-full max-w-sm max-h-[92vh] overflow-y-auto z-10">
         <div className="relative mb-3">
-          <button onClick={onClose} disabled={resetting} className="absolute right-0 top-0"><X className="h-5 w-5 text-muted-foreground" /></button>
+          <button onClick={onClose} disabled={resetting} className="popup-close absolute right-0 top-0"><X className="h-4 w-4" /></button>
           <h1 className="text-2xl font-bold text-foreground text-center">Vicissometer</h1>
           <h2 className="text-xl font-bold text-foreground text-center">Account Centre</h2>
         </div>

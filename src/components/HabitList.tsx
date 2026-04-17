@@ -27,9 +27,12 @@ export default function HabitList({ completedIds, onToggle, viewOnly = false }: 
       {habits.map((h) => {
         const checked = completedIds.has(h.id);
         return (
-          <div
+          <button
             key={h.id}
-            className={`glass rounded-xl p-3.5 flex items-center gap-3 transition-all ${
+            type="button"
+            disabled={viewOnly}
+            onClick={() => onToggle(h.id)}
+            className={`glass rounded-xl p-3.5 flex items-center gap-3 transition-all w-full text-left ${
               checked ? "border border-primary/30 bg-primary/5" : ""
             }`}
           >
@@ -48,10 +51,11 @@ export default function HabitList({ completedIds, onToggle, viewOnly = false }: 
               <Switch
                 checked={checked}
                 onCheckedChange={() => onToggle(h.id)}
+                onClick={(e) => e.stopPropagation()}
                 className="data-[state=checked]:bg-primary scale-100"
               />
             )}
-          </div>
+          </button>
         );
       })}
     </div>

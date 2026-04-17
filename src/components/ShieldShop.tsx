@@ -40,10 +40,10 @@ export default function ShieldShop({ onClose }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="glass-strong rounded-2xl p-6 w-full max-w-sm">
+      <div className="glass rounded-2xl p-6 w-full max-w-sm">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-foreground">🛡️ Shield Shop</h2>
-          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
+          <button onClick={onClose} className="popup-close"><X className="h-4 w-4" /></button>
         </div>
         <div className="text-center mb-6">
           <p className="text-3xl font-bold text-foreground">🪙 {stats?.coins || 0}</p>

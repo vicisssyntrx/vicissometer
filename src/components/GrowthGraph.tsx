@@ -40,10 +40,11 @@ export default function GrowthGraph() {
   }, [safeLogs]);
 
   const { filteredLogs, labelFormat } = useMemo(() => {
-    const weekStart = startOfWeek(latestValidDate, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(latestValidDate, { weekStartsOn: 1 });
-    const monthStart = startOfMonth(latestValidDate);
-    const monthEnd = endOfMonth(latestValidDate);
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+    const monthStart = startOfMonth(today);
+    const monthEnd = endOfMonth(today);
 
     const interval =
       range === "week"
@@ -61,9 +62,9 @@ export default function GrowthGraph() {
 
     return {
       filteredLogs: kept,
-      labelFormat: range === "week" ? "EEE" : "MMM d",
+      labelFormat: range === "week" ? "EEE d" : "MMM d",
     };
-  }, [safeLogs, latestValidDate, range]);
+  }, [safeLogs, range]);
 
   // Recompute "actual" deterministically from logs so backfilled edits don't create spikes/drops.
   // 1% rule: daily multiplier is 1 + (completionRatio)*0.01
@@ -109,49 +110,37 @@ export default function GrowthGraph() {
     );
   }
 
-  if (!data.length) {
-    return (
-      <div className="glass rounded-2xl p-4">
-        <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-3">Growth</h3>
-        <div className="h-36 flex items-center justify-center text-muted-foreground text-base">
-          Invalid growth dates detected in history
-        </div>
-      </div>
-    );
-  }
 
   return (
       <div className="glass rounded-2xl p-3 md:p-5">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-y-2">
         <h3 className="text-sm uppercase tracking-wider text-muted-foreground">Growth</h3>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setRange("week")}
-            className={`rounded-lg px-2 py-1 text-xs transition-colors ${range === "week" ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}
-          >
-            Week
-          </button>
-          <button
-            type="button"
-            onClick={() => setRange("month")}
-            className={`rounded-lg px-2 py-1 text-xs transition-colors ${range === "month" ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}
-          >
-            Month
-          </button>
-          <button
-            type="button"
-            onClick={() => setRange("all")}
-            className={`rounded-lg px-2 py-1 text-xs transition-colors ${range === "all" ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"}`}
-          >
-            All
-          </button>
+          {(["week", "month", "all"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRange(r)}
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                range === r
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-white/5 border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/10"
+              }`}
+            >
+              {r.charAt(0).toUpperCase() + r.slice(1)}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground w-full sm:w-auto">
           <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-primary inline-block" /> Actual</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-0.5 bg-muted-foreground inline-block" /> Ideal</span>
         </div>
       </div>
+      {data.length === 0 ? (
+        <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
+          No data for this {range === "week" ? "week" : "month"} yet
+        </div>
+      ) : (
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={data}>
           <XAxis
@@ -175,6 +164,7 @@ export default function GrowthGraph() {
           <Line type="monotone" dataKey="actual" stroke="hsl(0,72%,51%)" dot={false} strokeWidth={2} name="Your Growth" />
         </LineChart>
       </ResponsiveContainer>
+      )}
     </div>
   );
 }

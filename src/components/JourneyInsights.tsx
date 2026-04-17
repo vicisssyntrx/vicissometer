@@ -1,5 +1,6 @@
 import { useDailyLogs, getDenseLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
+import { todayYmdLocal } from "@/lib/date";
 
 export default function JourneyInsights() {
   const { data: logs } = useDailyLogs();
@@ -13,7 +14,8 @@ export default function JourneyInsights() {
   };
 
   const totalDays = denseLogs.length || 0;
-  const missedDays = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used).length || 0;
+  const today = todayYmdLocal();
+  const missedDays = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used && l.date !== today).length || 0;
   const completedDays = denseLogs.filter((l) => (l.completed_count === l.total_count && l.total_count > 0) || l.completed_count === -1).length || 0;
   const completionRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 

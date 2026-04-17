@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import StreakWindow from "./StreakWindow";
+import { todayYmdLocal } from "@/lib/date";
 
 interface Props { onClose: () => void; }
 
@@ -21,7 +22,8 @@ export default function PowerUpOverlay({ onClose }: Props) {
   const [showStreak, setShowStreak] = useState(false);
 
   const denseLogs = getDenseLogs(logs, stats?.start_date);
-  const gaps = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used);
+  const today = todayYmdLocal();
+  const gaps = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used && l.date !== today);
 
   const recover = async (log: (typeof gaps)[number]) => {
     if (!user || !stats || stats.power_ups < 1) {
@@ -71,10 +73,10 @@ export default function PowerUpOverlay({ onClose }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="glass-strong rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
+      <div className="glass rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-foreground">⚡ Power-Ups</h2>
-          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
+          <button onClick={onClose} className="popup-close"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-4">

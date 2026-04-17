@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 0%;
+    --background: 230 40% 6%;
     --foreground: 0 0% 95%;
 
     --card: 0 0% 10%;
@@ -55,15 +55,41 @@
   }
 }
 
-/* Glassmorphism — Apple-style outline with subtle grey fill */
+/* Glassmorphism — Genuine Liquid Chrome Frosting */
 .glass {
-  background: hsla(0, 0%, 12%, 0.55);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: transparent;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 1.35rem;
-  border: 1px solid hsla(0, 0%, 100%, 0.15);
-  box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.3), inset 0 1px 0 hsla(0, 0%, 100%, 0.1);
-  background-image: linear-gradient(135deg, hsla(0, 0%, 100%, 0.08), transparent 45%, hsla(0, 0%, 100%, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    inset 1px 1px 0px rgba(255, 255, 255, 0.35),
+    inset -1px -1px 0px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition:
+    transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+.glass:hover {
+  transform: scale(1.015);
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 0px rgba(255, 255, 255, 0.5),
+    inset -1px -1px 0px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.glass:active {
+  transform: scale(0.987);
+  transition-duration: 150ms;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 1px 1px 0px rgba(255, 255, 255, 0.2),
+    inset -1px -1px 0px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 .glass-strong {
@@ -97,10 +123,14 @@
   pointer-events: none;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: hsl(0, 0%, 20%); border-radius: 4px; }
+/* Hide scrollbars everywhere globally */
+* {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+*::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari/Webkit */
+}
 
 /* iOS safe-area bottom padding for fixed bars */
 .pb-safe {
@@ -116,26 +146,42 @@
   animation: pulse-subtle 2s ease-in-out infinite;
 }
 
-/* Apple-like smooth upward entrance */
-@keyframes apple-rise-in {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0) scale(0.99);
-    filter: blur(2px);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0);
-  }
-}
-
 .dashboard-rise {
-  animation: apple-rise-in 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Animation removed to prevent Webkit backdrop-filter rendering failures */
 }
 
-.rise-delay-1 { animation-delay: 50ms; }
-.rise-delay-2 { animation-delay: 110ms; }
-.rise-delay-3 { animation-delay: 170ms; }
-.rise-delay-4 { animation-delay: 230ms; }
-.rise-delay-5 { animation-delay: 290ms; }
+/* Apple-rise keyframes removed */
+
+/* Circular glass close button for all popup modals */
+.popup-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.25),
+    inset 1px 1px 0px rgba(255, 255, 255, 0.25),
+    inset -1px -1px 0px rgba(0, 0, 0, 0.15);
+  color: hsl(var(--muted-foreground));
+  transition: background 200ms ease, transform 150ms ease, box-shadow 200ms ease;
+  flex-shrink: 0;
+}
+.popup-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: hsl(var(--foreground));
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 0px rgba(255, 255, 255, 0.35),
+    inset -1px -1px 0px rgba(0, 0, 0, 0.1);
+}
+.popup-close:active {
+  transform: scale(0.88);
+  background: rgba(255, 255, 255, 0.05);
+}
+
