@@ -140,21 +140,23 @@ export default function Dashboard() {
           <div className="mx-auto w-full max-w-[860px] md:grid md:grid-cols-2 md:gap-4">
             {/* Mobile flow */}
             <div className="space-y-3 md:hidden">
+              <div className="dashboard-rise rise-delay-1">
+                <GrowthGraph />
+              </div>
+              
               <HabitList
                 completedIds={completedIds}
                 onToggle={toggleHabit}
                 viewOnly={false}
               />
-              <div className="dashboard-rise rise-delay-1">
+              
+              <div className="dashboard-rise rise-delay-2">
                 <BottomActionBar
                   onSave={handleSave}
                   onReset={handleReset}
                   disabled={!habits?.length || statsLoading || todayLogLoading || !!statsError || isTodayLocked}
                   hasHabits={!!habits?.length}
                 />
-              </div>
-              <div className="dashboard-rise rise-delay-2">
-                <GrowthGraph />
               </div>
               <div className="dashboard-rise rise-delay-3">
                 <OutcomeCards />
