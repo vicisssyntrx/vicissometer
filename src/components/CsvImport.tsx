@@ -20,6 +20,22 @@ export default function CsvImport({ onClose }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
 
+  const normalizeDate = (raw: string) => {
+    let dText = raw.trim();
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dText)) {
+      const parts = dText.split(/[-/]/);
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    }
+    const match = dText.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (match) {
+      let [ , p1, p2, yr ] = match;
+      let day = p1, month = p2;
+      if (parseInt(p1) <= 12 && parseInt(p2) > 12) { month = p1; day = p2; }
+      return `${yr}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    return dText;
+  };
+
   const parseCSV = (text: string): { rows: ParsedRow[]; errs: string[] } => {
     const normalized = text.trim();
     if (!normalized) return { rows: [], errs: ["File is empty"] };
@@ -31,11 +47,12 @@ export default function CsvImport({ onClose }: Props) {
     for (let i = 0; i < lines.length; i++) {
       const parts = lines[i].trim().split(",");
       if (parts.length < 2) { errs.push(`Row ${i + 2}: invalid format`); continue; }
-      const date = parts[0].trim();
+      const dateRaw = parts[0].trim();
+      const date = normalizeDate(dateRaw);
       const val = parts[1].trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errs.push(`Row ${i + 2}: invalid date "${date}"`); continue; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errs.push(`Row ${i + 2}: invalid date "${dateRaw}"`); continue; }
       if (val !== "0" && val !== "1") { errs.push(`Row ${i + 2}: value must be 0 or 1`); continue; }
-      if (seen.has(date)) { errs.push(`Row ${i + 2}: duplicate date "${date}"`); continue; }
+      if (seen.has(date)) { errs.push(`Row ${i + 2}: duplicate date "${dateRaw}"`); continue; }
       if (new Date(date) > new Date()) { errs.push(`Row ${i + 2}: future date "${date}"`); continue; }
       seen.add(date);
       rows.push({ date, completed: val === "1" });
@@ -62,7 +79,7 @@ export default function CsvImport({ onClose }: Props) {
         const d = XLSX.SSF.parse_date_code(rawDate);
         dateStr = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
       } else if (typeof rawDate === "string") {
-        dateStr = rawDate.trim();
+        dateStr = normalizeDate(rawDate);
       }
 
       const val = String(row[1]).trim();
