@@ -1,51 +1,43 @@
 import { useHabits } from "@/hooks/useHabits";
-import { useDailyLogs } from "@/hooks/useDailyLogs";
+import { useDailyLogs, getDenseLogs } from "@/hooks/useDailyLogs";
+import { useUserStats } from "@/hooks/useUserStats";
 import { useMemo } from "react";
+import { parseISO, differenceInDays, addYears, subDays } from "date-fns";
 
 export default function OutcomeCards() {
   const { data: habits } = useHabits();
   const { data: logs } = useDailyLogs();
+  const { data: stats } = useUserStats();
   const safeHabits = useMemo(() => habits ?? [], [habits]);
 
   const outcomes = useMemo(() => {
     const grouped = new Map<
       string,
-      { emoji: string; habits: typeof safeHabits; habitPercents: number[] }
+      { emoji: string; habits: typeof safeHabits }
     >();
     for (const h of safeHabits) {
       const key = h.outcome_name || "General";
-      if (!grouped.has(key)) grouped.set(key, { emoji: h.outcome_emoji || "🎯", habits: [], habitPercents: [] });
+      if (!grouped.has(key)) grouped.set(key, { emoji: h.outcome_emoji || "🎯", habits: [] });
       grouped.get(key)!.habits.push(h);
     }
-
-    if (!grouped.size) return grouped;
-
-    // Build completed-days count per habit.
-    // 100% = 365 completed days (one full year of identity-building).
-    // Habits added mid-program are capped at their accumulated completions / 365.
-    const completedDaysByHabit = new Map<string, number>();
-    if (logs) {
-      for (const log of logs) {
-        const completedSet = new Set(log.completed_habits);
-        for (const h of safeHabits) {
-          if (!completedSet.has(h.id)) continue;
-          // Only count days on or after the habit was created
-          if (log.date < h.created_at.slice(0, 10)) continue;
-          completedDaysByHabit.set(h.id, (completedDaysByHabit.get(h.id) ?? 0) + 1);
-        }
-      }
-    }
-
-    for (const [, outcome] of grouped) {
-      for (const h of outcome.habits) {
-        const completedDays = completedDaysByHabit.get(h.id) ?? 0;
-        // 365 is the fixed denominator — identity is built over a full year
-        const pct = Math.min(100, Math.round((completedDays / 365) * 100));
-        outcome.habitPercents.push(pct);
-      }
-    }
     return grouped;
-  }, [safeHabits, logs]);
+  }, [safeHabits]);
+
+  const overallRatio = useMemo(() => {
+    // Calculate total days for the 1-year program dynamically (365 or 366)
+    const startObj = stats?.start_date ? parseISO(stats.start_date) : new Date();
+    // Program ends 1 day before the same day next year
+    const endObj = subDays(addYears(startObj, 1), 1);
+    const programDays = Math.max(1, differenceInDays(endObj, startObj) + 1);
+
+    // Use denseLogs to calculate actual Completed Days just like Journey Insights
+    const denseLogs = getDenseLogs(logs, stats?.start_date);
+    const completedDays = denseLogs.filter(
+      (l) => (l.completed_count === l.total_count && l.total_count > 0) || l.completed_count === -1
+    ).length || 0;
+
+    return Math.min(100, Math.round((completedDays / programDays) * 100));
+  }, [logs, stats?.start_date]);
 
   if (!safeHabits.length) return null;
 
@@ -54,20 +46,16 @@ export default function OutcomeCards() {
       <h3 className="text-sm uppercase tracking-wider text-muted-foreground px-1">Outcomes</h3>
       <div className="grid grid-cols-2 gap-2">
         {Array.from(outcomes.entries()).map(([name, o]) => {
-          const ratio =
-            o.habitPercents.length > 0
-              ? Math.round(o.habitPercents.reduce((a, b) => a + b, 0) / o.habitPercents.length)
-              : 0;
           return (
             <div key={name} className="glass flex flex-col justify-center rounded-xl p-3 md:p-4 h-full min-h-[72px]">
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="text-xl leading-none shrink-0">{o.emoji}</span>
                 <p className="font-semibold text-foreground text-sm sm:text-base truncate flex-1 ml-1">{name}</p>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="text-sm font-bold text-primary shrink-0 leading-none min-w-[32px] ml-1.5">{ratio}%</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-primary shrink-0 leading-none w-[34px] text-right">{overallRatio}%</span>
                 <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden flex-shrink-0">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${ratio}%` }} />
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${overallRatio}%` }} />
                 </div>
               </div>
             </div>
