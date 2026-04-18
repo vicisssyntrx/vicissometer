@@ -255,7 +255,7 @@ export default function AccountCenter({ onClose }: Props) {
                   onChange={(e) => handleAvatarPicked(e.target.files?.[0])}
                 />
                 <Button type="button" variant="secondary" onClick={handleSelectAvatar} className="w-full h-10 text-sm">
-                  Select Image (max 1 MB)
+                  Select Image (max 5 MB)
                 </Button>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleUpdateProfile} className="bg-primary text-primary-foreground text-sm h-8">Save</Button>

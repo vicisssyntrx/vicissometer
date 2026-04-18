@@ -71,7 +71,14 @@ export default function Dashboard() {
       if (evening > now) {
         const timeout = evening.getTime() - now.getTime();
         const timer = setTimeout(() => {
-          new Notification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+              if (reg.showNotification) reg.showNotification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
+              else new Notification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
+            });
+          } else {
+            new Notification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
+          }
         }, timeout);
         return () => clearTimeout(timer);
       }

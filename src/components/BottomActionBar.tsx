@@ -61,7 +61,7 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
           {/* Add/Edit Habits (Left) */}
           <button
             onClick={() => setShowManage(true)}
-            className={`flex-none flex items-center justify-center rounded-xl h-12 w-12 transition-all ${
+            className={`flex-none flex items-center justify-center rounded-2xl h-12 w-12 transition-all ${
               !hasHabits
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 border border-primary/60 animate-pulse-subtle"
                 : "glass text-muted-foreground hover:text-foreground hover:bg-secondary/60"
@@ -74,7 +74,7 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
           <button
             onClick={onReset}
             disabled={saving}
-            className="flex-none flex items-center justify-center glass rounded-xl h-12 w-12 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="flex-none flex items-center justify-center glass rounded-2xl h-12 w-12 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             <RotateCcw className="h-[22px] w-[22px]" />
           </button>
@@ -83,7 +83,7 @@ export default function BottomActionBar({ onSave, onReset, disabled, hasHabits }
           <button
             onClick={handleSave}
             disabled={disabled || saving}
-            className={`flex-1 flex items-center justify-center gap-2 h-12 rounded-xl font-semibold text-base bg-primary text-primary-foreground shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 h-12 rounded-2xl font-semibold text-base bg-primary text-primary-foreground shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
               pulsing ? "animate-red-pulse" : ""
             }`}
           >
