@@ -68,13 +68,15 @@ export default function ParticleBackground() {
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
 
+      const isDesktop = canvas.width > 768;
       // Galaxy fits larger on desktop, compact on mobile
-      const baseR = canvas.width > 768
+      const baseR = isDesktop
         ? Math.min(canvas.width, canvas.height) * 0.72
         : Math.min(canvas.width, canvas.height) * 0.42;
 
       // Very slow rotation + very slow breath
-      angle += 0.00055;
+      const rotationSpeed = isDesktop ? 0.0002 : 0.00055;
+      angle += rotationSpeed;
       expandPhase += 0.003;
       const breathe = 1 + Math.sin(expandPhase) * 0.012; // ±1.2% pulse
 
@@ -156,9 +158,10 @@ export default function ParticleBackground() {
       ctx.restore();
 
       // ── Free-drifting stars drawn on top of everything ──
+      const starSpeedMultiplier = isDesktop ? 1 : 0.4;
       for (const s of stars) {
-        s.x += s.vx;
-        s.y += s.vy;
+        s.x += s.vx * starSpeedMultiplier;
+        s.y += s.vy * starSpeedMultiplier;
         if (s.x < 0) s.x = canvas.width;
         if (s.x > canvas.width) s.x = 0;
         if (s.y < 0) s.y = canvas.height;
