@@ -15,10 +15,11 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // 2 retries with 1 second delay gives worn network enough time to recover.
-      retry: 2,
-      retryDelay: 1000,
-      staleTime: 0, // Always refetch on window focus to ensure cross-device sync
+      retry: 1,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // exponential backoff
+      staleTime: 30 * 1000, // 30 seconds — prevents the focus-refetch storm
+      refetchOnWindowFocus: true,  // still syncs cross-device on tab switch
+      refetchOnReconnect: true,
     },
   },
 });
