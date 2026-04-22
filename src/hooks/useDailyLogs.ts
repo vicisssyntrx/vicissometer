@@ -86,7 +86,7 @@ export function useDailyLogs() {
   });
 }
 
-export function useTodayLog() {
+export function useTodayLog(enabled = true) {
   const { user } = useAuth();
   const today = todayYmdLocal();
   return useQuery({
@@ -101,7 +101,7 @@ export function useTodayLog() {
       if (error) throw error;
       return data ? normalizeLog(data) : null;
     },
-    enabled: !!user,
+    enabled: !!user && enabled,
   });
 }
 

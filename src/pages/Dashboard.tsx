@@ -20,9 +20,10 @@ import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
-  const { data: habits, isLoading: habitsLoading } = useHabits();
+  const { data: habits, isLoading: habitsLoading, isFetched: habitsFetched } = useHabits();
   const { data: stats, isLoading: statsLoading, error: statsError } = useUserStats();
-  const { data: todayLog, isLoading: todayLogLoading } = useTodayLog();
+  // Delay today's log fetch until habits query has resolved — staggers the HTTP/2 burst
+  const { data: todayLog, isLoading: todayLogLoading } = useTodayLog(habitsFetched);
   const { saveProgress, resetProgress } = useSaveProgress();
   const [isResetting, setIsResetting] = useState(false);
 
