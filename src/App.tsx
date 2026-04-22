@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
       // 2 retries with 1 second delay gives worn network enough time to recover.
       retry: 2,
       retryDelay: 1000,
-      staleTime: 30_000, // 30 seconds
+      staleTime: 0, // Always refetch on window focus to ensure cross-device sync
     },
   },
 });

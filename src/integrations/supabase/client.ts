@@ -11,7 +11,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
  * No URL mutation, no nonce — PostgREST rejects unknown query params.
  */
 const customFetch: typeof fetch = (input, init) =>
-  fetch(input, { ...init, keepalive: false, cache: 'no-store' });
+  fetch(input, { ...init, cache: 'no-store' });
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
