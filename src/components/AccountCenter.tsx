@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { X, LogOut, Upload, Shield, Zap, RotateCcw, Bell, User, Calendar, Download } from "lucide-react";
+import { X, LogOut, Shield, Zap, RotateCcw, Bell, User, Calendar, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ShieldShop from "./ShieldShop";
 import PowerUpOverlay from "./PowerUpOverlay";
-import CsvImport from "./CsvImport";
+
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { getInstallLabel, isMobileDevice, isRunningStandalone } from "@/lib/pwa";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,7 +27,7 @@ export default function AccountCenter({ onClose }: Props) {
   const qc = useQueryClient();
   const [showShields, setShowShields] = useState(false);
   const [showPowerUps, setShowPowerUps] = useState(false);
-  const [showImport, setShowImport] = useState(false);
+
   const [editingProfile, setEditingProfile] = useState(false);
   const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || "");
   const [avatarUrl, setAvatarUrl] = useState((user?.user_metadata as { avatar_url?: string } | undefined)?.avatar_url || "");
@@ -214,7 +214,6 @@ export default function AccountCenter({ onClose }: Props) {
 
   if (showShields) return <ShieldShop onClose={() => setShowShields(false)} />;
   if (showPowerUps) return <PowerUpOverlay onClose={() => setShowPowerUps(false)} />;
-  if (showImport) return <CsvImport onClose={() => setShowImport(false)} />;
 
   const currentDisplayName =
     profile?.display_name ||
@@ -288,9 +287,7 @@ export default function AccountCenter({ onClose }: Props) {
           <button onClick={() => setShowPowerUps(true)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/40 transition-colors text-foreground text-base">
             <Zap className="h-5 w-5 text-primary" /> Power-Up Recovery
           </button>
-          <button onClick={() => setShowImport(true)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/40 transition-colors text-foreground text-base">
-            <Upload className="h-5 w-5 text-primary" /> Import History
-          </button>
+
           {!isInstalled && (
             <button
               onClick={handleInstallApp}
