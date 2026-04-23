@@ -23,7 +23,10 @@ export default function PowerUpOverlay({ onClose }: Props) {
 
   const denseLogs = getDenseLogs(logs, stats?.start_date);
   const today = todayYmdLocal();
-  const gaps = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used && !l.is_recovered && l.date !== today);
+  // Recoverable days = fully missed (0 completions) OR partially completed, neither shielded nor recovered, and not today
+  const gaps = denseLogs.filter(
+    (l) => l.completed_count < l.total_count && !l.shield_used && !l.is_recovered && l.date !== today
+  );
 
   const recover = async (log: (typeof gaps)[number]) => {
     if (!user || !stats || stats.power_ups < 1) {

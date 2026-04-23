@@ -25,11 +25,18 @@ export function useMidnightInvalidation() {
   useEffect(() => {
     const now = new Date();
     const msUntilMidnight =
-      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0).getTime() - 
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0).getTime() -
       now.getTime();
 
-    const timer = setTimeout(() => {
-      // Midnight has passed! Force React Query to re-fetch and re-evaluate todayYmdLocal()
+    const timer = setTimeout(async () => {
+      // Midnight: auto-apply shields to yesterday if missed/partial and shields are available
+      try {
+        // @ts-ignore - RPC not yet in generated types
+        await supabase.rpc('finalize_missed_days');
+      } catch (e) {
+        console.warn('[midnight] finalize_missed_days failed:', e);
+      }
+      // Force React Query to re-fetch and re-evaluate todayYmdLocal()
       queryClient.invalidateQueries();
     }, msUntilMidnight + 1000); // add 1s buffer
 
