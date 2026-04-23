@@ -23,6 +23,14 @@ export function useMidnightInvalidation() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // 1. Run immediately on mount to process any missed days while the app was closed
+    // @ts-ignore
+    supabase.rpc('finalize_missed_days').then(() => {
+      queryClient.invalidateQueries({ queryKey: ["user_stats"] });
+      queryClient.invalidateQueries({ queryKey: ["daily_logs"] });
+    }).catch(e => console.warn('[init] finalize_missed_days failed:', e));
+
+    // 2. Setup midnight timer for the current session
     const now = new Date();
     const msUntilMidnight =
       new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0).getTime() -
@@ -31,14 +39,13 @@ export function useMidnightInvalidation() {
     const timer = setTimeout(async () => {
       // Midnight: auto-apply shields to yesterday if missed/partial and shields are available
       try {
-        // @ts-ignore - RPC not yet in generated types
+        // @ts-ignore
         await supabase.rpc('finalize_missed_days');
       } catch (e) {
         console.warn('[midnight] finalize_missed_days failed:', e);
       }
-      // Force React Query to re-fetch and re-evaluate todayYmdLocal()
       queryClient.invalidateQueries();
-    }, msUntilMidnight + 1000); // add 1s buffer
+    }, msUntilMidnight + 1000);
 
     return () => clearTimeout(timer);
   }, [queryClient]);

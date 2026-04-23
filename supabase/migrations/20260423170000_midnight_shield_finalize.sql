@@ -179,50 +179,76 @@ DECLARE
   v_yesterday date := current_date - 1;
   v_log daily_logs;
   v_stats user_stats;
+  v_curr_date date;
 BEGIN
   IF v_user_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'message', 'Not authenticated');
   END IF;
 
   SELECT * INTO v_stats FROM public.user_stats WHERE user_id = v_user_id FOR UPDATE;
-  SELECT * INTO v_log FROM public.daily_logs
-    WHERE user_id = v_user_id AND date = v_yesterday FOR UPDATE;
 
-  -- Nothing to do if yesterday was already resolved (shielded, recovered, or had completions)
-  IF v_log.id IS NOT NULL AND (v_log.shield_used OR v_log.is_recovered OR v_log.completed_count > 0) THEN
-    RETURN jsonb_build_object('success', true, 'action', 'none');
+  -- Start from the user's start_date, or 30 days ago if they've been gone a long time
+  v_curr_date := v_stats.start_date;
+  IF v_curr_date < current_date - 30 THEN
+    v_curr_date := current_date - 30;
   END IF;
 
-  -- Yesterday was a missed day (no log or 0 completions without shield)
-  IF v_stats.shields > 0 THEN
-    -- Auto-apply shield: preserve the streak
-    IF v_log.id IS NULL THEN
-      INSERT INTO public.daily_logs (
-        user_id, date, completed_habits, completed_count, total_count,
-        shield_used, streak_after, growth_before, growth_after, locked
-      ) VALUES (
-        v_user_id, v_yesterday, '[]', 0, 1,
-        true, v_stats.streak, v_stats.current_growth, v_stats.current_growth, true
-      );
+  -- Walk forward day by day up to yesterday
+  WHILE v_curr_date <= v_yesterday LOOP
+    SELECT * INTO v_log FROM public.daily_logs
+      WHERE user_id = v_user_id AND date = v_curr_date FOR UPDATE;
+
+    -- If this day is already finalized (completed > 0, shielded, or recovered)
+    IF v_log.id IS NOT NULL AND (v_log.completed_count > 0 OR v_log.shield_used OR v_log.is_recovered) THEN
+      -- Keep our streak tracker in sync with historical truth
+      v_stats.streak := COALESCE(v_log.streak_after, 0);
     ELSE
-      UPDATE public.daily_logs
-      SET shield_used = true, locked = true
-      WHERE user_id = v_user_id AND date = v_yesterday;
+      -- Missed day (no log OR 0 completions unshielded)
+      IF v_stats.shields > 0 THEN
+        IF v_log.id IS NULL THEN
+          INSERT INTO public.daily_logs (
+            user_id, date, completed_habits, completed_count, total_count,
+            shield_used, streak_after, growth_before, growth_after, locked
+          ) VALUES (
+            v_user_id, v_curr_date, '[]', 0, 1,
+            true, v_stats.streak, v_stats.current_growth, v_stats.current_growth, true
+          );
+        ELSE
+          UPDATE public.daily_logs
+          SET shield_used = true, locked = true, streak_after = v_stats.streak
+          WHERE id = v_log.id;
+        END IF;
+        
+        v_stats.shields := v_stats.shields - 1;
+      ELSE
+        -- No shields left, streak resets
+        v_stats.streak := 0;
+        
+        IF v_log.id IS NULL THEN
+          INSERT INTO public.daily_logs (
+            user_id, date, completed_habits, completed_count, total_count,
+            shield_used, streak_after, growth_before, growth_after, locked
+          ) VALUES (
+            v_user_id, v_curr_date, '[]', 0, 1,
+            false, 0, v_stats.current_growth, v_stats.current_growth, true
+          );
+        ELSE
+          UPDATE public.daily_logs
+          SET locked = true, streak_after = 0
+          WHERE id = v_log.id;
+        END IF;
+      END IF;
     END IF;
 
-    UPDATE public.user_stats
-    SET shields = shields - 1
-    WHERE user_id = v_user_id;
+    v_curr_date := v_curr_date + 1;
+  END LOOP;
 
-    RETURN jsonb_build_object('success', true, 'action', 'shield_applied');
-  ELSE
-    -- No shields left — confirm streak is 0
-    UPDATE public.user_stats SET streak = 0 WHERE user_id = v_user_id;
-    IF v_log.id IS NOT NULL THEN
-      UPDATE public.daily_logs SET locked = true WHERE user_id = v_user_id AND date = v_yesterday;
-    END IF;
-    RETURN jsonb_build_object('success', true, 'action', 'streak_reset');
-  END IF;
+  -- Save final stats exactly as they resolved up to yesterday
+  UPDATE public.user_stats
+  SET shields = v_stats.shields, streak = v_stats.streak
+  WHERE user_id = v_user_id;
+
+  RETURN jsonb_build_object('success', true, 'action', 'processed_missed_days');
 END;
 $$;
 
