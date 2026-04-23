@@ -1,9 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/supabase-rest/:path*",
-      "destination": "https://outgjulqkigbxaavcgww.supabase.co/rest/:path*"
-    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

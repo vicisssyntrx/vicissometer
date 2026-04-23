@@ -15,6 +15,13 @@ export function AuthProvider({
   const [loading, setLoading] = useState(true);
   const prevUserIdRef = useRef<string | null | undefined>(undefined);
 
+  // "Latest ref" pattern — keeps the auth state listener stable (empty deps)
+  // without risking a stale closure on the onAuthChange callback prop.
+  const onAuthChangeRef = useRef(onAuthChange);
+  useEffect(() => {
+    onAuthChangeRef.current = onAuthChange;
+  }, [onAuthChange]);
+
   useEffect(() => {
     // onAuthStateChange is the canonical source of truth.
     const {
@@ -27,7 +34,7 @@ export function AuthProvider({
 
       if (prevUserIdRef.current !== newUserId) {
         prevUserIdRef.current = newUserId;
-        onAuthChange?.(newUserId);
+        onAuthChangeRef.current?.(newUserId);
       }
     });
 
@@ -44,8 +51,7 @@ export function AuthProvider({
       });
 
     return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Empty deps is safe because we use onAuthChangeRef above.
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     const { error } = await supabase.auth.signUp({
@@ -77,7 +83,7 @@ export function AuthProvider({
       setUser(null);
       if (prevUserIdRef.current !== null) {
         prevUserIdRef.current = null;
-        onAuthChange?.(null);
+        onAuthChangeRef.current?.(null);
       }
     }
   };

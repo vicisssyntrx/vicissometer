@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import type { TablesInsert } from "@/integrations/supabase/types";
 
+// Only logs in local development, becomes a no-op in production
+const log = import.meta.env.DEV ? console.log.bind(console) : () => {};
+
 export interface Habit {
   id: string;
   user_id: string;
@@ -26,24 +29,19 @@ export function useHabits() {
         throw new Error("User not authenticated");
       }
       
-      try {
-        const { data, error } = await supabase
-          .from("habits")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("sort_order", { ascending: true });
-        
-        if (error) {
-          console.error("useHabits query error:", error);
-          throw error;
-        }
-        
-        console.log("useHabits query success, got", data?.length ?? 0, "habits");
-        return data as Habit[];
-      } catch (err) {
-        console.error("useHabits exception:", err);
-        throw err;
+      const { data, error } = await supabase
+        .from("habits")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("sort_order", { ascending: true });
+      
+      if (error) {
+        console.error("useHabits query error:", error);
+        throw error;
       }
+      
+      log("useHabits: fetched", data?.length ?? 0, "habits");
+      return data as Habit[];
     },
     enabled: !!user?.id,
   });
@@ -55,12 +53,8 @@ export function useCreateHabit() {
 
   return useMutation({
     mutationFn: async (habit: { name: string; emoji: string; outcome_name?: string; outcome_emoji?: string; reminder_time?: string }) => {
-      console.log("useCreateHabit: creating habit", habit);
-      
       if (!user) {
-        const error = "You must be signed in to create habits.";
-        console.error("useCreateHabit:", error);
-        throw new Error(error);
+        throw new Error("You must be signed in to create habits.");
       }
 
       // We omit sort_order entirely; the Postgres trigger will assign it automatically.
@@ -72,8 +66,6 @@ export function useCreateHabit() {
         outcome_emoji: habit.outcome_emoji || null,
         reminder_time: habit.reminder_time || null,
       };
-
-      console.log("useCreateHabit: inserting habit", newHabit);
       
       const { data, error } = await supabase
         .from("habits")
@@ -86,11 +78,10 @@ export function useCreateHabit() {
         throw error;
       }
       
-      console.log("useCreateHabit: success", data);
+      log("useCreateHabit: created habit", data?.id);
       return data as Habit;
     },
     onSuccess: () => {
-      console.log("useCreateHabit: invalidating habits cache");
       qc.invalidateQueries({ queryKey: ["habits"], exact: false });
     },
   });
