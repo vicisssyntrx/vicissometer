@@ -166,10 +166,10 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return <LoadingScreen message="Restoring your session…" />;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/auth" replace />;
   if (isInitialLoad) return <LoadingScreen />;
-  if (isResetting) return <LoadingScreen message="Resetting today's progress..." />;
+  if (isResetting) return <LoadingScreen />;
 
   return (
     <div className="relative min-h-screen bg-background">

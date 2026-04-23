@@ -3,7 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const path = (req.query.path as string[]).join('/');
+  const queryPath = req.query.path;
+  const path = Array.isArray(queryPath) ? queryPath.join('/') : (queryPath || '');
   const search = new URL(req.url!, `https://${req.headers.host}`).search;
   const targetUrl = `${SUPABASE_URL}/rest/v1/${path}${search}`;
 
