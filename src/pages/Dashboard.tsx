@@ -56,7 +56,7 @@ export default function Dashboard() {
 
   // Show a full-screen loader while the first data fetch is in flight.
   // Safety: a 6-second timeout ensures we never get permanently stuck.
-  const queriesLoading = habitsLoading || statsLoading;
+  const queriesLoading = habitsLoading || statsLoading || todayLogLoading;
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
     if (!queriesLoading) return;

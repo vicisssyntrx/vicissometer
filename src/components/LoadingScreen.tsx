@@ -41,8 +41,8 @@ export default function LoadingScreen({ message }: Props) {
       {/* Card */}
       <div className="relative z-10 flex flex-col items-center gap-6 px-8 py-10 glass rounded-2xl w-72 shadow-2xl">
         {/* Logo / brand */}
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-4xl select-none">⚡</span>
+        <div className="flex flex-col items-center gap-3">
+          <img src="/icon-192.png" alt="Vicissometer Logo" className="w-16 h-16 rounded-2xl shadow-lg" />
           <h1 className="text-xl font-bold tracking-tight text-foreground">
             Vicissometer
           </h1>
