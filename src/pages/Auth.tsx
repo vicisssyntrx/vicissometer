@@ -8,13 +8,12 @@ import { toast } from "sonner";
 import ParticleBackground from "@/components/ParticleBackground";
 
 export default function Auth() {
-  const { user, loading } = useAuth();
+  const { user, loading, signIn, signUp } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
 
   if (loading) return <div className="min-h-screen bg-background" />;
   if (user) return <Navigate to="/" replace />;
@@ -27,7 +26,9 @@ export default function Auth() {
       if (isSignUp) {
         const { error } = await signUp(email, password, displayName);
         if (error) throw error;
-        toast.success("Account created. Please sign in.");
+        toast.success("A confirmation has been sent to your Registered mail. Please Click Confirm. Check Spam if not recieved in inbox.", {
+          duration: 10000,
+        });
         setIsSignUp(false);
         setPassword("");
       } else {

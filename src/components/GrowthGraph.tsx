@@ -83,7 +83,7 @@ export default function GrowthGraph() {
       const idealGrowth = Math.pow(1.01, Math.max(0, dayNum) + 1);
 
       // Some flows may mark recovered gaps with negative completed_count; treat as full completion.
-      const effectiveCompleted = l.completed_count < 0 ? l.total_count : l.completed_count;
+      const effectiveCompleted = (l as any).is_recovered ? l.total_count : l.completed_count;
       const ratio =
         l.total_count > 0
           ? Math.max(0, Math.min(1, effectiveCompleted / l.total_count))

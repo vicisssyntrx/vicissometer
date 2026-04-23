@@ -22,20 +22,34 @@ export default function ShieldShop({ onClose }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [showStreak, setShowStreak] = useState(false);
+  const [buying, setBuying] = useState(false);
 
   const buy = async (shields: number, cost: number) => {
-    if (!stats || !user) return;
-    if (stats.coins < cost) {
-      toast.error("Not enough coins!");
-      return;
+    if (buying || !stats || !user) return;
+    
+    setBuying(true);
+    try {
+      // @ts-ignore - buy_shields is a new RPC not yet in generated types
+      const { data, error } = await supabase.rpc('buy_shields', { 
+        p_count: shields, 
+        p_cost: cost 
+      });
+
+      if (error) throw error;
+      
+      const response = data as { success: boolean; message: string };
+      if (!response.success) {
+        toast.error(response.message);
+        return;
+      }
+
+      toast.success(`Bought ${shields} shield${shields > 1 ? 's' : ''}!`);
+      qc.invalidateQueries({ queryKey: ["user_stats"] });
+    } catch (error: any) {
+      toast.error("Purchase failed: " + error.message);
+    } finally {
+      setBuying(false);
     }
-    const { error } = await supabase.from("user_stats").update({
-      coins: stats.coins - cost,
-      shields: stats.shields + shields,
-    }).eq("user_id", user.id);
-    if (error) { toast.error(error.message); return; }
-    qc.invalidateQueries({ queryKey: ["user_stats"] });
-    toast.success(`Bought ${shields} shield${shields > 1 ? "s" : ""}!`);
   };
 
   return createPortal(
@@ -57,7 +71,7 @@ export default function ShieldShop({ onClose }: Props) {
               <Button
                 key={opt.shields}
                 onClick={() => buy(opt.shields, opt.cost)}
-                disabled={!canAfford}
+                disabled={!canAfford || buying}
                 variant={canAfford ? "default" : "secondary"}
                 className={`w-full h-14 text-base ${canAfford ? "bg-primary text-primary-foreground" : ""}`}
               >

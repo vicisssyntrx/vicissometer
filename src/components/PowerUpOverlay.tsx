@@ -23,7 +23,7 @@ export default function PowerUpOverlay({ onClose }: Props) {
 
   const denseLogs = getDenseLogs(logs, stats?.start_date);
   const today = todayYmdLocal();
-  const gaps = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used && l.date !== today);
+  const gaps = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used && !l.is_recovered && l.date !== today);
 
   const recover = async (log: (typeof gaps)[number]) => {
     if (!user || !stats || stats.power_ups < 1) {
@@ -34,25 +34,27 @@ export default function PowerUpOverlay({ onClose }: Props) {
     // Buying a gap restores the historical compound chain permanently upwards.
     const recoveryGrowth = stats.current_growth * 1.01;
     
-    // UPSERT safely injects any purely ghost-generated timeline gaps back into the permanent matrix.
+    // UPSERT with is_recovered=true (NOT completed_count=-1 which violates DB constraints)
     const { error: logErr } = await supabase
       .from("daily_logs")
       .upsert({
         user_id: user.id,
         date: log.date,
-        completed_count: -1,
+        completed_count: 0,
         total_count: log.total_count,
         shield_used: false,
         streak_after: 0,
         growth_before: stats.current_growth,
         growth_after: recoveryGrowth,
-        locked: true
-      }, { onConflict: "user_id,date" });
+        locked: true,
+        is_recovered: true,
+      } as any, { onConflict: "user_id,date" });
       
     if (logErr) {
       toast.error(logErr.message);
       return;
     }
+
     const { error: statErr } = await supabase
       .from("user_stats")
       .update({
@@ -68,7 +70,7 @@ export default function PowerUpOverlay({ onClose }: Props) {
     
     qc.invalidateQueries({ queryKey: ["daily_logs"] });
     qc.invalidateQueries({ queryKey: ["user_stats"] });
-    toast.success("Gap recovered");
+    toast.success("Gap recovered! 🔥");
   };
 
   return createPortal(

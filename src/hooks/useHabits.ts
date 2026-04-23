@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import type { TablesInsert } from "@/integrations/supabase/types";
@@ -63,43 +63,21 @@ export function useCreateHabit() {
         throw new Error(error);
       }
 
-      // Get current max sort_order to assign new habit an incremented value
-      let nextSortOrder = 0;
-      try {
-        console.log("useCreateHabit: fetching existing sort_order for user", user.id);
-        
-        const { data: existingHabits, error: sortOrderError } = await supabase
-          .from("habits")
-          .select("sort_order")
-          .eq("user_id", user.id)
-          .order("sort_order", { ascending: false })
-          .limit(1);
-        
-        if (sortOrderError) {
-          console.warn("useCreateHabit: Error fetching existing sort_order:", sortOrderError);
-        } else if (existingHabits && existingHabits.length > 0) {
-          nextSortOrder = (existingHabits[0].sort_order ?? 0) + 1;
-          console.log("useCreateHabit: next sort_order will be", nextSortOrder);
-        }
-      } catch (err) {
-        console.warn("useCreateHabit: Exception while getting sort_order:", err);
-      }
-
-      const newHabit: TablesInsert<"habits"> = {
+      // We omit sort_order entirely; the Postgres trigger will assign it automatically.
+      const newHabit: Partial<Habit> = {
         user_id: user.id,
         name: habit.name,
         emoji: habit.emoji,
         outcome_name: habit.outcome_name || null,
         outcome_emoji: habit.outcome_emoji || null,
         reminder_time: habit.reminder_time || null,
-        sort_order: nextSortOrder,
       };
 
       console.log("useCreateHabit: inserting habit", newHabit);
       
       const { data, error } = await supabase
         .from("habits")
-        .insert(newHabit)
+        .insert(newHabit as any)
         .select()
         .single();
       

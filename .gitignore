@@ -25,3 +25,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Prevent accidental non-npm usage
+bun.lock
+bun.lockb
+yarn.lock
+pnpm-lock.yaml

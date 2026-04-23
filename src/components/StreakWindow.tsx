@@ -17,10 +17,10 @@ export default function StreakWindow({ onClose }: Props) {
   const completedDays = denseLogs.filter((l) => l.completed_count === l.total_count && l.total_count > 0).map((l) => parseISO(l.date));
   const partialDays = denseLogs.filter((l) => l.completed_count > 0 && l.completed_count < l.total_count).map((l) => parseISO(l.date));
   const shieldedDays = denseLogs.filter((l) => l.shield_used).map((l) => parseISO(l.date));
-  const gapDays = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used).map((l) => parseISO(l.date));
-  const recoveredDays = denseLogs.filter((l) => l.completed_count === -1).map((l) => parseISO(l.date));
+  const gapDays = denseLogs.filter((l) => l.completed_count === 0 && !l.shield_used && !(l as any).is_recovered).map((l) => parseISO(l.date));
+  const recoveredDays = denseLogs.filter((l) => (l as any).is_recovered).map((l) => parseISO(l.date));
   
-  const currentStreak = computeCurrentStreak(logs);
+  const displayStreak = stats?.streak || 0;
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
@@ -31,7 +31,7 @@ export default function StreakWindow({ onClose }: Props) {
         </div>
 
         <p className="text-sm text-muted-foreground mb-3">
-          Current streak: <span className="font-semibold text-foreground">{currentStreak}</span>
+          Current streak: <span className="font-semibold text-foreground">{displayStreak}</span>
         </p>
 
         <div className="rounded-xl border border-border p-2 overflow-x-auto">

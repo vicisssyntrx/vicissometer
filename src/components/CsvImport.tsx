@@ -5,12 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import Papa from "papaparse";
 
 interface Props { onClose: () => void; }
 
 interface ParsedRow { date: string; completed: boolean; }
-type XlsxRow = (string | number | null | undefined)[];
 
 export default function CsvImport({ onClose }: Props) {
   const { user } = useAuth();
@@ -20,197 +19,112 @@ export default function CsvImport({ onClose }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
 
-  const normalizeDate = (raw: string) => {
-    let dText = raw.trim();
-    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dText)) {
-      const parts = dText.split(/[-/]/);
-      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+  const normalizeDate = (dateStr: string): string => {
+    // If it's already YYYY-MM-DD, return it
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
     }
-    const match = dText.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-    if (match) {
-      let [ , p1, p2, yr ] = match;
-      let day = p1, month = p2;
-      if (parseInt(p1) <= 12 && parseInt(p2) > 12) { month = p1; day = p2; }
-      return `${yr}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  
+    // Attempt standard parsing for formats with explicit months (e.g., "Mar 4 2024")
+    const dateObj = new Date(dateStr);
+    if (isNaN(dateObj.getTime())) {
+      throw new Error(`Invalid date format: ${dateStr}. Please use YYYY-MM-DD.`);
     }
-    return dText;
+  
+    // If it's something ambiguous like 03/04/2024, reject it strictly
+    if (/^\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4}$/.test(dateStr)) {
+      throw new Error(`Ambiguous date format: ${dateStr}. Please convert to YYYY-MM-DD in your spreadsheet.`);
+    }
+  
+    return dateObj.toISOString().split("T")[0];
   };
 
-  const parseCSV = (text: string): { rows: ParsedRow[]; errs: string[] } => {
-    const normalized = text.trim();
-    if (!normalized) return { rows: [], errs: ["File is empty"] };
-    const lines = normalized.split(/\r?\n/).slice(1);
-    const rows: ParsedRow[] = [];
-    const errs: string[] = [];
-    const seen = new Set<string>();
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    for (let i = 0; i < lines.length; i++) {
-      const parts = lines[i].trim().split(",");
-      if (parts.length < 2) { errs.push(`Row ${i + 2}: invalid format`); continue; }
-      const dateRaw = parts[0].trim();
-      const date = normalizeDate(dateRaw);
-      const val = parts[1].trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errs.push(`Row ${i + 2}: invalid date "${dateRaw}"`); continue; }
-      if (val !== "0" && val !== "1") { errs.push(`Row ${i + 2}: value must be 0 or 1`); continue; }
-      if (seen.has(date)) { errs.push(`Row ${i + 2}: duplicate date "${dateRaw}"`); continue; }
-      if (new Date(date) > new Date()) { errs.push(`Row ${i + 2}: future date "${date}"`); continue; }
-      seen.add(date);
-      rows.push({ date, completed: val === "1" });
-    }
-    return { rows, errs };
-  };
-
-  const parseXLSX = (data: ArrayBuffer): { rows: ParsedRow[]; errs: string[] } => {
-    const workbook = XLSX.read(data, { type: "array" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = XLSX.utils.sheet_to_json<XlsxRow>(sheet, { header: 1 });
-    const rows: ParsedRow[] = [];
-    const errs: string[] = [];
-    const seen = new Set<string>();
-
-    for (let i = 1; i < jsonData.length; i++) {
-      const row = jsonData[i];
-      if (!row || row.length < 2) { errs.push(`Row ${i + 1}: invalid format`); continue; }
-
-      let dateStr = "";
-      const rawDate = row[0];
-      if (typeof rawDate === "number") {
-        // Excel serial date number
-        const d = XLSX.SSF.parse_date_code(rawDate);
-        dateStr = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
-      } else if (typeof rawDate === "string") {
-        dateStr = normalizeDate(rawDate);
-      }
-
-      const val = String(row[1]).trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) { errs.push(`Row ${i + 1}: invalid date "${rawDate}"`); continue; }
-      if (val !== "0" && val !== "1") { errs.push(`Row ${i + 1}: value must be 0 or 1`); continue; }
-      if (seen.has(dateStr)) { errs.push(`Row ${i + 1}: duplicate date "${dateStr}"`); continue; }
-      if (new Date(dateStr) > new Date()) { errs.push(`Row ${i + 1}: future date "${dateStr}"`); continue; }
-      seen.add(dateStr);
-      rows.push({ date: dateStr, completed: val === "1" });
-    }
-    return { rows, errs };
-  };
-
-  const parseFile = (file: File) => {
     setPreview(null);
     setErrors([]);
-    const isXlsx = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
-    if (isXlsx) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target?.result as ArrayBuffer;
-        const { rows, errs } = parseXLSX(data);
+
+    Papa.parse(file, {
+      skipEmptyLines: true,
+      complete: (results) => {
+        const rows: ParsedRow[] = [];
+        const errs: string[] = [];
+        const seen = new Set<string>();
+
+        const data = results.data as string[][];
+        for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          if (i === 0 && row[0]?.toLowerCase() === 'date') continue;
+          if (row.length < 2) { errs.push(`Row ${i + 1}: invalid format`); continue; }
+
+          const dateRaw = String(row[0]).trim();
+          let date = "";
+          try {
+            date = normalizeDate(dateRaw);
+          } catch (err: any) {
+            errs.push(`Row ${i + 1}: ${err.message}`);
+            continue;
+          }
+          
+          const val = String(row[1]).trim();
+
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errs.push(`Row ${i + 1}: invalid date "${dateRaw}"`); continue; }
+          if (val !== "0" && val !== "1" && val.toLowerCase() !== "true" && val.toLowerCase() !== "false") { 
+            errs.push(`Row ${i + 1}: value must be 0 or 1`); continue; 
+          }
+          if (seen.has(date)) { errs.push(`Row ${i + 1}: duplicate date "${dateRaw}"`); continue; }
+          if (new Date(date) > new Date()) { errs.push(`Row ${i + 1}: future date "${date}"`); continue; }
+          
+          seen.add(date);
+          rows.push({ date, completed: val === "1" || val.toLowerCase() === "true" });
+        }
+        
         rows.sort((a, b) => a.date.localeCompare(b.date));
         setPreview(rows);
         setErrors(errs);
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const { rows, errs } = parseCSV(text);
-        rows.sort((a, b) => a.date.localeCompare(b.date));
-        setPreview(rows);
-        setErrors(errs);
-      };
-      reader.readAsText(file);
-    }
+      },
+      error: (error: any) => {
+        toast.error("Failed to parse CSV: " + error.message);
+      }
+    });
   };
 
   const doImport = async () => {
     if (!preview || !user) return;
     setImporting(true);
 
-    // 1. First, dump the raw parsed CSV rows into daily_logs
-    const skeletonLogsBase = preview.map((row) => ({
-      user_id: user.id,
-      date: row.date,
-      completed_habits: [] as string[],
-      completed_count: row.completed ? 1 : 0,
-      total_count: 1,
-      shield_used: false,
-      streak_after: 0,
-      growth_before: 1.0,
-      growth_after: 1.0,
-      locked: true,
-    }));
+    try {
+      // 1. Map preview to expected payload
+      const payload = preview.map((row) => ({
+        date: row.date,
+        total_count: 1,
+        completed_count: row.completed ? 1 : 0,
+        shield_used: false,
+      }));
 
-    const { error: insertErr } = await supabase.from("daily_logs").upsert(skeletonLogsBase, { onConflict: "user_id,date" });
-    if (insertErr) {
-      toast.error("Failed to import CSV logs: " + insertErr.message);
-      setImporting(false);
-      return;
-    }
-
-    // 2. Download the ENTIRE universal master history of all logs and dynamically regenerate exact compounding stats.
-    const { data: allLogs, error: fetchErr } = await supabase
-      .from("daily_logs")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("date", { ascending: true });
-
-    if (fetchErr || !allLogs) {
-      toast.error("Failed to sync historical mathematics.");
-      setImporting(false);
-      return;
-    }
-
-    let runningGrowth = 1.0;
-    let runningStreak = 0;
-    const finalUpdatePayloads = [];
-
-    // Rigorously recount every single day from the dawn of the timeline.
-    for (const log of allLogs) {
-      const prevGrowth = runningGrowth;
-      let dayWasCompletedOrShielded = false;
-
-      if (log.completed_count !== null && log.total_count !== null && log.total_count > 0 && log.completed_count === log.total_count) {
-        runningGrowth *= 1.01;
-        runningStreak += 1;
-        dayWasCompletedOrShielded = true;
-      } else if (log.shield_used) {
-        dayWasCompletedOrShielded = true;
-      }
-
-      if (!dayWasCompletedOrShielded) {
-        runningStreak = 0;
-      }
-
-      finalUpdatePayloads.push({
-        ...log,
-        growth_before: prevGrowth,
-        growth_after: runningGrowth,
-        streak_after: runningStreak
+      // 2. Call the bulk import RPC
+      // @ts-ignore - Types not generated for this RPC yet
+      const { data, error } = await supabase.rpc('bulk_import_daily_logs', {
+        p_logs: payload as any
       });
-    }
 
-    // Push the corrected mathematical history strictly back to the DB to fix any chronological paradoxes.
-    await supabase.from("daily_logs").upsert(finalUpdatePayloads, { onConflict: "user_id,date" });
+      if (error) throw error;
+      
+      const response = data as any;
+      if (response && !response.success) {
+        throw new Error(response.message || "Unknown server error");
+      }
 
-    // 3. Atomically overwrite User Stats with the final pristine numbers.
-    const { error: statsErr } = await supabase
-      .from("user_stats")
-      .update({
-        current_growth: runningGrowth,
-        streak: runningStreak,
-      })
-      .eq("user_id", user.id);
-
-    if (statsErr) {
-      toast.error("Failed final sync line: " + statsErr.message);
+      toast.success("Import complete!");
+      qc.invalidateQueries(); // Refresh the whole dashboard
+      onClose();
+    } catch (error: any) {
+      toast.error("Import failed: " + error.message);
+    } finally {
       setImporting(false);
-      return;
     }
-
-    qc.invalidateQueries({ queryKey: ["daily_logs"] });
-    qc.invalidateQueries({ queryKey: ["user_stats"] });
-    qc.invalidateQueries({ queryKey: ["daily_log_today"] });
-    toast.success(`Imported ${preview.length} days!`);
-    setImporting(false);
-    onClose();
   };
 
   return (
@@ -222,18 +136,18 @@ export default function CsvImport({ onClose }: Props) {
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Upload a <code className="text-primary">CSV</code> or <code className="text-primary">XLSX</code> with format: <code className="text-primary">date, completed</code> (1 = done, 0 = missed). No coins or shields are awarded from imports.
+          Upload a <code className="text-primary">CSV</code> with format: <code className="text-primary">date, completed</code> (1 = done, 0 = missed). No coins or shields are awarded from imports.
         </p>
 
         <input
           ref={fileRef}
           type="file"
-          accept=".csv,.xlsx,.xls"
+          accept=".csv"
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && parseFile(e.target.files[0])}
+          onChange={handleFileUpload}
         />
         <Button onClick={() => fileRef.current?.click()} variant="secondary" className="w-full mb-4">
-          <Upload className="h-4 w-4 mr-2" /> Select CSV or XLSX File
+          <Upload className="h-4 w-4 mr-2" /> Select CSV File
         </Button>
 
         {errors.length > 0 && (

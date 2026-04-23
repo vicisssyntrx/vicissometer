@@ -10,7 +10,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { useUserStats } from "@/hooks/useUserStats";
-import { computeCurrentStreak } from "@/lib/streak";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -39,7 +38,7 @@ export default function Navbar() {
     (user?.user_metadata as { avatar_url?: string } | undefined)?.avatar_url ||
     null;
   const initial = displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "?";
-  const currentStreak = computeCurrentStreak(logs);
+  const displayStreak = stats?.streak || 0;
 
   return (
     <>
@@ -66,7 +65,7 @@ export default function Navbar() {
                   onClick={() => setShowStreak(true)}
                   className="glass rounded-full px-3.5 py-1.5 text-base sm:text-lg font-semibold text-foreground whitespace-nowrap hover:bg-secondary/60 transition-colors"
                 >
-                  🔥 {currentStreak}
+                  🔥 {displayStreak}
                 </button>
               </div>
             </div>

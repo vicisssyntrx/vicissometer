@@ -9,14 +9,19 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // to Supabase's US servers. Auth calls go direct (required for auth to work).
 const proxyFetch = (url: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
   const urlStr = url.toString();
-  const finalUrl = urlStr.includes('/rest/v1/')
-    ? urlStr.replace(
-        `${SUPABASE_URL}/rest/`,
-        '/supabase-rest/'
-      )
+  const isRestCall = urlStr.includes('/rest/v1/');
+
+  const finalUrl = isRestCall
+    ? urlStr.replace(`${SUPABASE_URL}/rest/`, '/supabase-rest/')
     : urlStr;
 
-  return fetch(finalUrl, { ...options, cache: 'no-store' });
+  // Only force cache bypass on REST data queries.
+  // Auth token refreshes, storage, and realtime should use default browser cache behavior.
+  const fetchOptions = isRestCall
+    ? { ...options, cache: 'no-store' as RequestCache }
+    : options;
+
+  return fetch(finalUrl, fetchOptions);
 };
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {

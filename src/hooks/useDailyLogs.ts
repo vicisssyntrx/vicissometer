@@ -17,6 +17,7 @@ export interface DailyLog {
   growth_before: number;
   growth_after: number;
   locked: boolean;
+  is_recovered: boolean;
   created_at: string;
 }
 
@@ -59,12 +60,16 @@ export function getDenseLogs(logs: DailyLog[] | undefined | null, startDateStr?:
             growth_before: 1.0,
             growth_after: 1.0,
             locked: true,
+            is_recovered: false,
             created_at: new Date().toISOString()
           });
         }
       });
     }
-  } catch(e) {}
+  } catch(e) {
+    // Actually log the error so developers know why the graph is empty
+    console.error('[getDenseLogs] Failed to parse dates or generate intervals:', e);
+  }
   
   return dense;
 }
@@ -80,7 +85,7 @@ export function useDailyLogs() {
         .eq("user_id", user!.id)
         .order("date", { ascending: true });
       if (error) throw error;
-      return data.map((row) => normalizeLog(row));
+      return data.map((row) => normalizeLog({ ...row, is_recovered: (row as any).is_recovered ?? false }));
     },
     enabled: !!user,
   });
@@ -99,7 +104,7 @@ export function useTodayLog(enabled = true) {
         .eq("date", today)
         .maybeSingle();
       if (error) throw error;
-      return data ? normalizeLog(data) : null;
+      return data ? normalizeLog({ ...data, is_recovered: (data as any).is_recovered ?? false }) : null;
     },
     enabled: !!user && enabled,
   });
@@ -117,7 +122,7 @@ export function useLogForDate(date: string) {
         .eq("date", date)
         .maybeSingle();
       if (error) throw error;
-      return data ? normalizeLog(data) : null;
+      return data ? normalizeLog({ ...data, is_recovered: (data as any).is_recovered ?? false }) : null;
     },
     enabled: !!user && !!date,
   });

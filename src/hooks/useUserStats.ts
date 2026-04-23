@@ -1,4 +1,4 @@
-﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 
@@ -28,18 +28,28 @@ export function useUserStats() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
-      if (data) return data as UserStats;
+      if (error) {
+        console.error("Error fetching user stats:", error);
+        throw error;
+      }
+      
+      // If no data exists yet (e.g., trigger is lagging behind auth), return default fallback
+      if (!data) {
+        return {
+          id: 'temp-fallback-id',
+          user_id: user.id,
+          coins: 0,
+          streak: 0,
+          shields: 0,
+          power_ups: 0,
+          current_growth: 1.0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          start_date: new Date().toISOString().split('T')[0]
+        } as unknown as UserStats;
+      }
 
-      // Row doesn't exist yet — create it (upsert handles race conditions)
-      const { data: created, error: createError } = await supabase
-        .from("user_stats")
-        .upsert({ user_id: user.id }, { onConflict: "user_id" })
-        .select("*")
-        .maybeSingle();
-      if (createError) throw createError;
-      if (!created) throw new Error("Failed to create user stats");
-      return created as UserStats;
+      return data as UserStats;
     },
     enabled: !!user?.id,
   });

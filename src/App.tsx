@@ -2,7 +2,6 @@ import { useCallback, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import PwaInstallManager from "@/components/PwaInstallManager";
@@ -41,7 +40,6 @@ function AppInner() {
   return (
     <AuthProvider onAuthChange={handleAuthChange}>
       <TooltipProvider>
-        <Toaster />
         <Sonner />
         <PwaInstallManager />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

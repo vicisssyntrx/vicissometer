@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/useAuth";
 import { Navigate } from "react-router-dom";
 import ParticleBackground from "@/components/ParticleBackground";
@@ -18,6 +19,24 @@ import { useTodayLog } from "@/hooks/useDailyLogs";
 import { useSaveProgress } from "@/hooks/useSaveProgress";
 import { toast } from "sonner";
 
+export function useMidnightInvalidation() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const now = new Date();
+    const msUntilMidnight =
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0).getTime() - 
+      now.getTime();
+
+    const timer = setTimeout(() => {
+      // Midnight has passed! Force React Query to re-fetch and re-evaluate todayYmdLocal()
+      queryClient.invalidateQueries();
+    }, msUntilMidnight + 1000); // add 1s buffer
+
+    return () => clearTimeout(timer);
+  }, [queryClient]);
+}
+
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const { data: habits, isLoading: habitsLoading, isFetched: habitsFetched } = useHabits();
@@ -26,6 +45,7 @@ export default function Dashboard() {
   const { data: todayLog, isLoading: todayLogLoading } = useTodayLog(habitsFetched);
   const { saveProgress, resetProgress } = useSaveProgress();
   const [isResetting, setIsResetting] = useState(false);
+  useMidnightInvalidation();
 
   // Show a full-screen loader while the first data fetch is in flight.
   // Safety: a 6-second timeout ensures we never get permanently stuck.
@@ -56,12 +76,7 @@ export default function Dashboard() {
     else if (todayLog === null) setCompletedIds(new Set());
   }, [todayLog, hasLocalEdits]);
 
-  // Request notification permission on first load
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
+  // Notifications are handled explicitly in AccountCenter now.
 
   // Schedule browser notifications for habit reminders
   useEffect(() => {
@@ -109,18 +124,18 @@ export default function Dashboard() {
       toast.info("Please wait, loading stats...");
       return;
     }
-    if (!habits || !stats) {
-      toast.error("Stats are still loading. Try again.");
+    if (!habits?.length) {
+      toast.error("No habits found.");
       return;
     }
-    return saveProgress(habits, completedIds, stats, todayLog);
+    return saveProgress(habits, completedIds, todayLog);
   };
 
   const handleReset = async () => {
     if (!stats || !user) return;
     setIsResetting(true);
     try {
-      const success = await resetProgress(stats, todayLog);
+      const success = await resetProgress(todayLog);
       if (success) {
         setCompletedIds(new Set());
         setHasLocalEdits(true);
@@ -206,7 +221,7 @@ export default function Dashboard() {
               Made with <span className="text-red-500 opacity-100 hover:scale-110 transition-transform duration-300">❤️</span> by <a href="https://linktr.ee/vicisssyntrx" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">Viciss Syntrx</a>
             </p>
             <p className="text-[10px] text-muted-foreground/60 mt-1 tracking-widest font-mono uppercase">
-              Vicissometer v0.0.2.6_4.18
+              Vicissometer v0.0.2.6_4.23
             </p>
           </div>
         </div>

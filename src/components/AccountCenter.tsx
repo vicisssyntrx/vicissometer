@@ -98,23 +98,50 @@ export default function AccountCenter({ onClose }: Props) {
   };
 
   const handleAvatarPicked = async (file?: File) => {
-    if (!file) return;
+    if (!file || !user) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be less than 5 MB");
+      toast.error("File is too large. Max size is 5MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = String(reader.result || "");
-      setAvatarUrl(base64);
-      toast.success("Image selected");
-    };
-    reader.readAsDataURL(file);
+    try {
+      toast.loading("Uploading avatar...", { id: "avatar-upload" });
+
+      const fileExt = file.name.split('.').pop();
+      // Path: {user_id}/{random_uuid}.{ext}
+      const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+
+      // 1. Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get the public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      // 3. Update local state
+      setAvatarUrl(publicUrl);
+
+      // 4. Update auth metadata with the short URL
+      const { error: authError } = await supabase.auth.updateUser({ 
+        data: { avatar_url: publicUrl } 
+      });
+
+      if (authError) throw authError;
+
+      toast.success("Avatar updated successfully!", { id: "avatar-upload" });
+    } catch (error: any) {
+      console.error("Avatar upload failed:", error);
+      toast.error("Failed to upload avatar: " + error.message, { id: "avatar-upload" });
+    }
   };
 
   const handleSetStartDate = async (date: Date | undefined) => {
