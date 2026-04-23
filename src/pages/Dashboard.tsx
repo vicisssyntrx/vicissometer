@@ -18,17 +18,24 @@ import { useUserStats } from "@/hooks/useUserStats";
 import { useTodayLog } from "@/hooks/useDailyLogs";
 import { useSaveProgress } from "@/hooks/useSaveProgress";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useMidnightInvalidation() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
     // 1. Run immediately on mount to process any missed days while the app was closed
-    // @ts-ignore
-    supabase.rpc('finalize_missed_days').then(() => {
-      queryClient.invalidateQueries({ queryKey: ["user_stats"] });
-      queryClient.invalidateQueries({ queryKey: ["daily_logs"] });
-    }).catch(e => console.warn('[init] finalize_missed_days failed:', e));
+    const initMissingDays = async () => {
+      try {
+        // @ts-ignore
+        await supabase.rpc('finalize_missed_days');
+        queryClient.invalidateQueries({ queryKey: ["user_stats"] });
+        queryClient.invalidateQueries({ queryKey: ["daily_logs"] });
+      } catch (e) {
+        console.warn('[init] finalize_missed_days failed:', e);
+      }
+    };
+    initMissingDays();
 
     // 2. Setup midnight timer for the current session
     const now = new Date();
