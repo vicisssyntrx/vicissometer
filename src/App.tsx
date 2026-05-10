@@ -16,9 +16,9 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // exponential backoff
-      staleTime: 60 * 1000, // 60 seconds — prevents the focus-refetch storm
+      staleTime: 0, // 0 ensures data is ALWAYS refetched in background on load/focus
       gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days of cache memory
-      refetchOnWindowFocus: true,  // still syncs cross-device on tab switch
+      refetchOnWindowFocus: true,  // syncs cross-device on tab switch
       refetchOnReconnect: true,
     },
   },
