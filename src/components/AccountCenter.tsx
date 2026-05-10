@@ -134,6 +134,14 @@ export default function AccountCenter({ onClose }: Props) {
 
       if (authError) throw authError;
 
+      // 5. Update profiles table for instant cross-device sync
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("user_id", user.id);
+
+      qc.invalidateQueries({ queryKey: ["profile"] });
+
       toast.success("Avatar updated successfully!", { id: "avatar-upload" });
     } catch (error: any) {
       console.error("Avatar upload failed:", error);
