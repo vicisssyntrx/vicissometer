@@ -24,19 +24,13 @@ export default function OutcomeCards() {
   }, [safeHabits]);
 
   const overallRatio = useMemo(() => {
-    // Calculate total days for the 1-year program dynamically (365 or 366)
-    const startObj = stats?.start_date ? parseISO(stats.start_date) : new Date();
-    // Program ends 1 day before the same day next year
-    const endObj = subDays(addYears(startObj, 1), 1);
-    const programDays = Math.max(1, differenceInDays(endObj, startObj) + 1);
-
-    // Use denseLogs to calculate actual Completed Days just like Journey Insights
     const denseLogs = getDenseLogs(logs, stats?.start_date);
+    const totalDays = denseLogs.length || 0;
     const completedDays = denseLogs.filter(
-      (l) => (l.completed_count === l.total_count && l.total_count > 0) || l.completed_count === -1
+      (l) => (l.completed_count === l.total_count && l.total_count > 0) || (l as any).is_recovered
     ).length || 0;
-
-    return Math.min(100, Math.round((completedDays / programDays) * 100));
+    
+    return totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
   }, [logs, stats?.start_date]);
 
   if (!safeHabits.length) return null;

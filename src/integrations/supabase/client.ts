@@ -19,7 +19,13 @@ const proxyFetch = (url: RequestInfo | URL, options: RequestInit = {}): Promise<
     finalUrl = urlStr.replace(`${SUPABASE_URL}/auth/v1/`, '/supabase-auth/');
   }
 
-  return fetch(finalUrl, options);
+  // Only force cache bypass on REST data queries so mutations (add/edit/delete) reflect instantly.
+  // Auth token refreshes, storage, and realtime should use default browser cache behavior.
+  const fetchOptions = isRestCall
+    ? { ...options, cache: 'no-store' as RequestCache }
+    : options;
+
+  return fetch(finalUrl, fetchOptions);
 };
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
