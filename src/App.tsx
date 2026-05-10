@@ -16,11 +16,45 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // exponential backoff
-      staleTime: 30 * 1000, // 30 seconds — prevents the focus-refetch storm
+      staleTime: 60 * 1000, // 60 seconds — prevents the focus-refetch storm
+      gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days of cache memory
       refetchOnWindowFocus: true,  // still syncs cross-device on tab switch
       refetchOnReconnect: true,
     },
   },
+});
+
+const CACHE_KEY = "vicissometer_react_query_cache";
+
+// 1. Hydrate the query cache instantly from local storage on load
+try {
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    const state = JSON.parse(cached);
+    state.forEach((query: any) => {
+      if (query.state && query.state.data !== undefined) {
+        queryClient.setQueryData(query.queryKey, query.state.data, {
+          updatedAt: query.state.dataUpdatedAt,
+        });
+      }
+    });
+  }
+} catch (e) {
+  console.warn("Failed to hydrate cache", e);
+}
+
+// 2. Persist query cache to local storage whenever it changes (debounced)
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type === "updated" || event.type === "added" || event.type === "removed") {
+    clearTimeout((window as any)._persisterTimeout);
+    (window as any)._persisterTimeout = setTimeout(() => {
+      const state = queryClient.getQueryCache().getAll().map(query => ({
+        queryKey: query.queryKey,
+        state: query.state,
+      }));
+      localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+    }, 1000);
+  }
 });
 
 function AppInner() {
@@ -28,12 +62,17 @@ function AppInner() {
   const prevUserIdRef = useRef<string | null>(null);
 
   const handleAuthChange = useCallback((userId: string | null) => {
-    // When the active user changes (login, logout, or switch), blow away ALL cached
+    // When the active user changes (logout or switch), blow away ALL cached
     // query data so the new user's data is fetched fresh from Supabase.
     if (prevUserIdRef.current !== userId) {
+      // We only want to wipe the cache if we previously had an active user.
+      // If we are just initializing from null (e.g., refresh or first login),
+      // we shouldn't wipe the cache because Dashboard queries might already be in-flight!
+      if (prevUserIdRef.current !== null) {
+        queryClient.removeQueries(); // hard-remove to avoid showing old user data
+        console.log("[Auth] User changed to", userId, "— cleared React Query cache");
+      }
       prevUserIdRef.current = userId;
-      queryClient.removeQueries(); // hard-remove (not just invalidate) to avoid showing old user data
-      console.log("[Auth] User changed to", userId, "— cleared React Query cache");
     }
   }, []);
 

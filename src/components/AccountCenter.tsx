@@ -31,9 +31,6 @@ export default function AccountCenter({ onClose }: Props) {
   const [editingProfile, setEditingProfile] = useState(false);
   const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || "");
   const [avatarUrl, setAvatarUrl] = useState((user?.user_metadata as { avatar_url?: string } | undefined)?.avatar_url || "");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    typeof window !== "undefined" && "Notification" in window ? Notification.permission === "granted" : false
-  );
   const [resetting, setResetting] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetToken, setResetToken] = useState("");
@@ -153,22 +150,6 @@ export default function AccountCenter({ onClose }: Props) {
     if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["user_stats"] });
     toast.success(`Program starts ${format(date, "MMM d, yyyy")} → ends ${format(new Date(date.getFullYear() + 1, date.getMonth(), date.getDate()), "MMM d, yyyy")}`);
-  };
-
-  const handleToggleNotifications = async () => {
-    if ("Notification" in window) {
-      if (Notification.permission === "default") {
-        const result = await Notification.requestPermission();
-        setNotificationsEnabled(result === "granted");
-        if (result === "granted") toast.success("Notifications enabled!");
-        else toast.info("Notifications denied");
-      } else if (Notification.permission === "granted") {
-        setNotificationsEnabled(!notificationsEnabled);
-        toast.info(notificationsEnabled ? "Notifications muted" : "Notifications enabled");
-      } else {
-        toast.info("Please enable notifications in your browser settings");
-      }
-    }
   };
 
   const handleResetDefaults = () => {
@@ -344,12 +325,6 @@ export default function AccountCenter({ onClose }: Props) {
                 />
               </PopoverContent>
             </Popover>
-          </div>
-
-          {/* Notifications toggle */}
-          <div className="w-full flex items-center justify-between p-3 rounded-xl text-foreground text-base">
-            <span className="flex items-center gap-3"><Bell className="h-5 w-5 text-primary" /> Notifications</span>
-            <Switch checked={notificationsEnabled} onCheckedChange={handleToggleNotifications} className="data-[state=checked]:bg-primary" />
           </div>
 
           <hr className="border-border my-1" />

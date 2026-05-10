@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/supabase-rest/(.*)", "destination": "https://outgjulqkigbxaavcgww.supabase.co/rest/$1" },
+    { "source": "/supabase-auth/(.*)", "destination": "https://outgjulqkigbxaavcgww.supabase.co/auth/v1/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

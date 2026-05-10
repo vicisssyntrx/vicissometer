@@ -10,18 +10,16 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const proxyFetch = (url: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
   const urlStr = url.toString();
   const isRestCall = urlStr.includes('/rest/v1/');
+  const isAuthCall = urlStr.includes('/auth/v1/');
 
-  const finalUrl = isRestCall
-    ? urlStr.replace(`${SUPABASE_URL}/rest/`, '/supabase-rest/')
-    : urlStr;
+  let finalUrl = urlStr;
+  if (isRestCall) {
+    finalUrl = urlStr.replace(`${SUPABASE_URL}/rest/`, '/supabase-rest/');
+  } else if (isAuthCall) {
+    finalUrl = urlStr.replace(`${SUPABASE_URL}/auth/v1/`, '/supabase-auth/');
+  }
 
-  // Only force cache bypass on REST data queries.
-  // Auth token refreshes, storage, and realtime should use default browser cache behavior.
-  const fetchOptions = isRestCall
-    ? { ...options, cache: 'no-store' as RequestCache }
-    : options;
-
-  return fetch(finalUrl, fetchOptions);
+  return fetch(finalUrl, options);
 };
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {

@@ -69,14 +69,17 @@ export default function Dashboard() {
   useMidnightInvalidation();
 
   // Show a full-screen loader while the first data fetch is in flight.
-  // Safety: a 6-second timeout ensures we never get permanently stuck.
-  const queriesLoading = habitsLoading || statsLoading || todayLogLoading;
+  // We only wait for the absolute essentials (habits and stats) to prevent infinite loops.
+  // todayLog can load in the background (graph/checkboxes will pop in).
+  const queriesLoading = habitsLoading || statsLoading;
   const [timedOut, setTimedOut] = useState(false);
+  
   useEffect(() => {
-    if (!queriesLoading) return;
-    const t = setTimeout(() => setTimedOut(true), 6000);
+    // Only start the timeout once, on mount.
+    const t = setTimeout(() => setTimedOut(true), 10000); // 10s safety buffer
     return () => clearTimeout(t);
-  }, [queriesLoading]);
+  }, []);
+
   const isInitialLoad = queriesLoading && !timedOut;
 
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -97,30 +100,6 @@ export default function Dashboard() {
     else if (todayLog === null) setCompletedIds(new Set());
   }, [todayLog, hasLocalEdits]);
 
-  // Notifications are handled explicitly in AccountCenter now.
-
-  // Schedule browser notifications for habit reminders
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      const now = new Date();
-      const evening = new Date();
-      evening.setHours(20, 0, 0, 0);
-      if (evening > now) {
-        const timeout = evening.getTime() - now.getTime();
-        const timer = setTimeout(() => {
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(reg => {
-              if (reg.showNotification) reg.showNotification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
-              else new Notification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
-            });
-          } else {
-            new Notification("Vicissometer", { body: "Don't forget to track and save your habits today!", icon: "/icon-192.png" });
-          }
-        }, timeout);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, []);
 
   const toggleHabit = (id: string) => {
     setCompletedIds((prev) => {

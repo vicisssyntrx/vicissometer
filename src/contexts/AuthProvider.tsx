@@ -38,19 +38,32 @@ export function AuthProvider({
       }
     });
 
+    // Fallback timeout to prevent infinite loading if the network hangs
+    const timeoutId = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) console.warn("[AuthProvider] Auth loading timed out, forcing to false.");
+        return false;
+      });
+    }, 3000);
+
     // Seed initial state in case the listener fires after first render.
     supabase.auth.getSession()
       .then(({ data: { session: initialSession } }) => {
+        clearTimeout(timeoutId);
         setSession((prev) => prev ?? initialSession);
         setUser((prev) => prev ?? (initialSession?.user ?? null));
         setLoading((prev) => (prev ? false : prev));
       })
       .catch(() => {
+        clearTimeout(timeoutId);
         // Network error on getSession — still resolve loading so the app isn't stuck.
         setLoading(false);
       });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []); // Empty deps is safe because we use onAuthChangeRef above.
 
   const signUp = async (email: string, password: string, displayName?: string) => {

@@ -21,6 +21,11 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/supabase-rest\//, ''),
       },
+      '/supabase-auth/': {
+        target: `${supabaseUrl}/auth/v1/`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/supabase-auth\//, ''),
+      },
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),

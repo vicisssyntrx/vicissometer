@@ -2,7 +2,6 @@ import { useAuth } from "@/contexts/useAuth";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import NotificationPanel from "./NotificationPanel";
 import AccountCenter from "./AccountCenter";
 import StreakWindow from "./StreakWindow";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,6 @@ export default function Navbar() {
   const { user } = useAuth();
   const { data: logs } = useDailyLogs();
   const { data: stats } = useUserStats();
-  const [showNotif, setShowNotif] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [showStreak, setShowStreak] = useState(false);
   const { data: profile } = useQuery({
@@ -70,9 +68,6 @@ export default function Navbar() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-              <Button variant="ghost" size="icon" onClick={() => setShowNotif(!showNotif)} className="relative h-9 w-9 md:h-10 md:w-10">
-                <Bell className="h-4.5 w-4.5 md:h-5 md:w-5 text-muted-foreground" />
-              </Button>
               <button
                 onClick={() => setShowAccount(true)}
                 className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden hover:opacity-90 transition-opacity flex-shrink-0"
@@ -84,8 +79,6 @@ export default function Navbar() {
               </button>
             </div>
           </nav>
-          {/* Notification panel anchors relative to this container */}
-          {showNotif && <NotificationPanel onClose={() => setShowNotif(false)} />}
         </div>
       </div>
       {showStreak && <StreakWindow onClose={() => setShowStreak(false)} />}
